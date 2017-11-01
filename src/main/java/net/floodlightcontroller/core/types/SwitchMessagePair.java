@@ -17,10 +17,13 @@
 
 package net.floodlightcontroller.core.types;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import net.floodlightcontroller.core.web.serializers.SwitchMessagePairSerializer;
 import org.projectfloodlight.openflow.protocol.OFMessage;
 
 import net.floodlightcontroller.core.IOFSwitch;
 
+@JsonSerialize(using=SwitchMessagePairSerializer.class)
 public class SwitchMessagePair {
     private final IOFSwitch sw;
     private final OFMessage msg;
