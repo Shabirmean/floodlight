@@ -3,6 +3,8 @@ package net.floodlightcontroller.mactracker;
 
 import org.eclipse.paho.client.mqttv3.*;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.UnsupportedEncodingException;
@@ -11,6 +13,7 @@ import java.util.Arrays;
 import static org.apache.commons.codec.CharEncoding.UTF_8;
 
 public class FlowModifier {
+    protected static Logger logger;
     MqttClient mqttClient;
     private String OVS_BRIDGE;
     static final String BROKER_URI = "tcp://localhost:1883";
@@ -26,6 +29,7 @@ public class FlowModifier {
     // "ciena/UPLOAD/#"
 
     boolean init() {
+        logger = LoggerFactory.getLogger(FlowModifier.class);
         try {
             mqttClient = new MqttClient(BROKER_URI, MqttClient.generateClientId(), new MemoryPersistence());
             MqttConnectOptions options = new MqttConnectOptions();
@@ -41,6 +45,7 @@ public class FlowModifier {
         }
 
         this.subscribe();
+        logger.info("############# STARTED MQTT Listener...");
         return true;
     }
 
