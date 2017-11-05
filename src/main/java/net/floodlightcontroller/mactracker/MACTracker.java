@@ -7,14 +7,7 @@ import net.floodlightcontroller.core.module.IFloodlightModule;
 import net.floodlightcontroller.core.module.IFloodlightService;
 import net.floodlightcontroller.packet.Ethernet;
 import org.projectfloodlight.openflow.protocol.*;
-import org.projectfloodlight.openflow.protocol.action.*;
-import org.projectfloodlight.openflow.protocol.instruction.OFInstruction;
-import org.projectfloodlight.openflow.protocol.instruction.OFInstructionApplyActions;
-import org.projectfloodlight.openflow.protocol.instruction.OFInstructions;
-import org.projectfloodlight.openflow.protocol.match.Match;
-import org.projectfloodlight.openflow.protocol.match.MatchField;
-import org.projectfloodlight.openflow.protocol.oxm.OFOxms;
-import org.projectfloodlight.openflow.types.*;
+import org.projectfloodlight.openflow.types.DatapathId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -90,60 +83,8 @@ public class MACTracker implements IOFMessageListener, IFloodlightModule, IOFSwi
     }
 
     public Command receive(IOFSwitch sw, OFMessage msg, FloodlightContext cntx) {
-        OFFactory myFactory = sw.getOFFactory();
-        OFVersion ofVersion = myFactory.getVersion();
-        System.out.println(ofVersion.toString());
-
-
-//        Match myMatch = myFactory.buildMatch()
-//                .setExact(MatchField.IN_PORT, OFPort.of(-4))
-//                .setExact(MatchField.ETH_TYPE, EthType.IPv4)
-////                .setExact(MatchField.IPV4_SRC, IPv4Address.of("192.168.1.1"))
-////                .setExact(MatchField.IP_PROTO, IpProtocol.TCP)
-////                .setExact(MatchField.IP_PROTO, IpProtocol.UDP)
-////                .setExact(MatchField.TCP_DST, TransportPort.of(0))
-//                .build();
-
-//        OFActions allActions = myFactory.actions();
-
-//        OFInstructions instructions = myFactory.instructions();
-//        ArrayList<OFAction> actionList = new ArrayList<OFAction>();
-//        OFActions actions = myFactory.actions();
-//        OFOxms oxms = myFactory.oxms();
-//
-//
-//        OFActionSetField setDlDst = actions.buildSetField()
-//                .setField(oxms.buildEthDst().setValue(MacAddress.of("2a:74:6c:22:0f:96")).build()).build();
-//        actionList.add(setDlDst);
-//
-//        OFActionSetField setNwDst = actions.buildSetField()
-//                .setField(oxms.buildIpv4Dst().setValue(IPv4Address.of("192.168.1.3")).build()).build();
-//        actionList.add(setNwDst);
-//
-//        OFActionPopVlan popVlan = actions.popVlan();
-//        actionList.add(popVlan);
-//
-//        OFActionOutput output = actions.buildOutput().setMaxLen(0xFFffFFff).setPort(OFPort.of(3)).build();
-//        actionList.add(output);
-//
-//        OFInstructionApplyActions applyActions = instructions.buildApplyActions().setActions(actionList).build();
-//        ArrayList<OFInstruction> instructionList = new ArrayList<OFInstruction>();
-//        instructionList.add(applyActions);
-//
-//        OFFlowAdd flowAdd = myFactory.buildFlowAdd()
-//                .setBufferId(OFBufferId.NO_BUFFER)
-//                .setHardTimeout(3600)
-//                .setIdleTimeout(10)
-//                .setPriority(32768)
-//                .setMatch(myMatch)
-//                .setInstructions(instructionList)
-//                .setTableId(TableId.of(3))
-//                .build();
-//
-//        sw.write(flowAdd);
-
         Ethernet eth = IFloodlightProviderService.bcStore.get(cntx, IFloodlightProviderService.CONTEXT_PI_PAYLOAD);
-        logger.info("++++++ A message from " + eth.getSourceMACAddress().toString());
+//        logger.info("++++++ A message from " + eth.getSourceMACAddress().toString());
         Long sourceMACHash = eth.getSourceMACAddress().getLong();
         if (!macAddresses.contains(sourceMACHash)) {
             macAddresses.add(sourceMACHash);
