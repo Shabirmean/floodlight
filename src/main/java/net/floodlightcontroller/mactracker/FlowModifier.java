@@ -73,7 +73,6 @@ public class FlowModifier {
         });
 
         try {
-            mqttClient.connect();
             mqttClient.subscribe(SUBSCRIBE_TOPIC, 1);
         } catch (MqttException e) {
             e.printStackTrace();
