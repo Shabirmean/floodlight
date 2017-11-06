@@ -52,17 +52,17 @@ public class FlowModifier implements MqttCallback {
                     if (mqttClient.isConnected()) {
                         logger.info("############# STARTED MQTT Listener...");
                         logger.info("############# Subscribed to : " + SUBSCRIBE_TOPIC);
-                        mqttClient.subscribe(SUBSCRIBE_TOPIC, 1);
+                        mqttClient.subscribe(SUBSCRIBE_TOPIC, 0);
                     }
                 } catch (MqttException e) {
                     e.printStackTrace();
                 }
 
-                try {
-                    Thread.sleep(5000);
-                } catch (InterruptedException ex) {
-                    logger.error("MQTT Connect-Thread Sleep Interrupt Exception.");
-                }
+//                try {
+//                    Thread.sleep(5000);
+//                } catch (InterruptedException ex) {
+//                    logger.error("MQTT Connect-Thread Sleep Interrupt Exception.");
+//                }
             }
         };
 
