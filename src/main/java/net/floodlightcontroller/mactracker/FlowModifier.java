@@ -21,7 +21,7 @@ public class FlowModifier implements MqttCallback {
     private String OVS_BRIDGE;
     static final String BROKER_URI = "tcp://localhost:1883";
     static final String EVENT_TYPE = "UPLOAD";
-    static final String SUBSCRIBE_TOPIC = "ciena" + File.separator + EVENT_TYPE + File.separator + "/request/#";
+    static final String SUBSCRIBE_TOPIC = "ciena" + File.separator + EVENT_TYPE + File.separator + "request/#";
     static final String PUBLISH_TOPIC = "ciena" + File.separator + EVENT_TYPE + File.separator + "reply";
     static final String BELL_FLOW = "BELL";
     static final String FIDO_FLOW = "FIDO";
@@ -58,11 +58,11 @@ public class FlowModifier implements MqttCallback {
                     e.printStackTrace();
                 }
 
-//                try {
-//                    Thread.sleep(5000);
-//                } catch (InterruptedException ex) {
-//                    logger.error("MQTT Connect-Thread Sleep Interrupt Exception.");
-//                }
+                try {
+                    Thread.sleep(5000);
+                } catch (InterruptedException ex) {
+                    logger.error("MQTT Connect-Thread Sleep Interrupt Exception.");
+                }
             }
         };
 
