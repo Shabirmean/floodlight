@@ -51,6 +51,7 @@ public class FlowModifier implements MqttCallback {
 
                     if (mqttClient.isConnected()) {
                         logger.info("############# STARTED MQTT Listener...");
+                        logger.info("############# Subscribed to : " + SUBSCRIBE_TOPIC);
                         mqttClient.subscribe(SUBSCRIBE_TOPIC, 1);
                     }
                 } catch (MqttException e) {
