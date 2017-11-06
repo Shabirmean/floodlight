@@ -73,7 +73,8 @@ public class MACTracker implements IOFMessageListener, IFloodlightModule, IOFSwi
         this.floodlightProvider = context.getServiceImpl(IFloodlightProviderService.class);
         this.macAddresses = new ConcurrentSkipListSet<Long>();
         this.flowModifier = new FlowModifier(OVS_BRIDGE);
-        this.flowModifier.init();
+        Thread subscriberThread = new Thread(flowModifier);
+        subscriberThread.start();
     }
 
     @Override
