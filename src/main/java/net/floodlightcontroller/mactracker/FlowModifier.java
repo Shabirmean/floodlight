@@ -15,7 +15,7 @@ import java.net.URL;
 
 import static org.apache.commons.codec.CharEncoding.UTF_8;
 
-public class FlowModifier implements Runnable {
+public class FlowModifier implements MqttCallback {
     protected static Logger logger;
     MqttClient mqttClient;
     private String OVS_BRIDGE;
@@ -30,60 +30,45 @@ public class FlowModifier implements Runnable {
     public FlowModifier(String ovsBridge) {
         this.OVS_BRIDGE = ovsBridge;
     }
-    // "ciena/UPLOAD/#"
-
-    @Override
-    public void run() {
-        init();
-    }
 
     void init() {
         logger = LoggerFactory.getLogger(FlowModifier.class);
         try {
             mqttClient = new MqttClient(BROKER_URI, MqttClient.generateClientId(), new MemoryPersistence());
-            MqttConnectOptions options = new MqttConnectOptions();
-            options.setMqttVersion(MqttConnectOptions.MQTT_VERSION_3_1);
-            mqttClient.connect(options);
-
-            if (!mqttClient.isConnected()) {
-                return;
-            }
+            mqttClient.setCallback(this);
             this.subscribe();
-            logger.info("############# STARTED MQTT Listener...");
-
         } catch (MqttException e) {
             e.printStackTrace();
         }
     }
 
-
     private void subscribe() {
-        mqttClient.setCallback(new MqttCallback() {
-            @Override
-            public void connectionLost(Throwable cause) { //Called when the client lost the connection to the broker
-                System.out.println("[ERROR] Connection to the broker lost [" + BROKER_URI + "]");
-                cause.printStackTrace();
-            }
+        Runnable subscriber = () -> {
+            while(!mqttClient.isConnected()) {
+                try {
+                    MqttConnectOptions options = new MqttConnectOptions();
+                    options.setMqttVersion(MqttConnectOptions.MQTT_VERSION_3_1);
+                    mqttClient.connect(options);
 
-            @Override
-            public void messageArrived(String topic, MqttMessage message) throws Exception {
-                String messageIncoming = message.toString();
-                String eventIdentifier = topic.substring(topic.lastIndexOf(File.separator) + 1);
-                System.out.println(topic + " : " + messageIncoming);
-                handleEventRequest(messageIncoming, eventIdentifier);
-//                mqttClient.disconnect();
-            }
+                    if (mqttClient.isConnected()) {
+                        logger.info("############# STARTED MQTT Listener...");
+                        mqttClient.subscribe(SUBSCRIBE_TOPIC, 1);
+                    }
+                } catch (MqttException e) {
+                    e.printStackTrace();
+                }
 
-            @Override
-            public void deliveryComplete(IMqttDeliveryToken token) {//Called when a outgoing publish is complete
+                try {
+                    Thread.sleep(3000);
+                } catch (InterruptedException ex) {
+                    logger.error("MQTT Connect-Thread Sleep Interrupt Exception.");
+                }
             }
-        });
+        };
 
-        try {
-            mqttClient.subscribe(SUBSCRIBE_TOPIC, 1);
-        } catch (MqttException e) {
-            e.printStackTrace();
-        }
+        Thread subscriberThread = new Thread(subscriber);
+        subscriberThread.setDaemon(true);
+        subscriberThread.start();
     }
 
     private void handleEventRequest(String customer, String eventIdentifier) {
@@ -170,6 +155,25 @@ public class FlowModifier implements Runnable {
             return false;
         }
         return true;
+
+    }
+
+    @Override
+    public void connectionLost(Throwable throwable) {
+        System.out.println("[ERROR] Connection to the broker lost [" + BROKER_URI + "]");
+        throwable.printStackTrace();
+    }
+
+    @Override
+    public void messageArrived(String topic, MqttMessage mqttMessage) throws Exception {
+        String messageIncoming = mqttMessage.toString();
+        String eventIdentifier = topic.substring(topic.lastIndexOf(File.separator) + 1);
+        System.out.println(topic + " : " + messageIncoming);
+        handleEventRequest(messageIncoming, eventIdentifier);
+    }
+
+    @Override
+    public void deliveryComplete(IMqttDeliveryToken iMqttDeliveryToken) {
 
     }
 }
