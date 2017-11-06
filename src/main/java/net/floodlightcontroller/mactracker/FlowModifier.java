@@ -84,16 +84,9 @@ public class FlowModifier {
     }
 
     private void handleEventRequest(String customer, String eventIdentifier) {
-        try {
             switch (customer.toUpperCase()) {
                 case BELL_FLOW:
                     //TODO:: Setup stuff
-                    URL obj = new URL(OVS_ENDPOINT);
-
-                    HttpURLConnection connection = (HttpURLConnection) obj.openConnection();
-//                    connection.setHostnameVerifier((arg0, arg1) -> true);
-                    //add request header
-                    connection.setRequestMethod("POST");
                     String flowEntry1 = "{\"switch\":\"00:00:d6:ed:a6:a2:0c:44\",\"name\":\"flow-1-2-1\"," +
                             "\"priority\":\"32768\",\"in_port\":\"1\",\"active\":\"true\", \"eth_type\":\"0x0800\"," +
                             "\"eth_src\":\"1e:c7:d9:4c:cb:7d\", \"eth_dst\":\"62:a4:25:4c:7b:a0\", " +
@@ -129,53 +122,19 @@ public class FlowModifier {
                             "\"eth_type\":\"0x0800\",\"eth_src\":\"62:a4:25:4c:7b:a0\", \"ipv4_src\":\"192.168.1.2\"," +
                             " \"actions\":\"\"}";
 
-                    // Send post request
-                    connection.setDoOutput(true);
-                    DataOutputStream wr = new DataOutputStream(connection.getOutputStream());
-                    wr.writeBytes(flowEntry1);
-                    wr.flush();
-                    wr.close();
-
-                    wr.writeBytes(flowEntry2);
-                    wr.flush();
-                    wr.close();
-
-                    wr.writeBytes(flowEntry3);
-                    wr.flush();
-                    wr.close();
-
-                    wr.writeBytes(flowEntry4);
-                    wr.flush();
-                    wr.close();
-
-                    wr.writeBytes(flowEntry5);
-                    wr.flush();
-                    wr.close();
-
-                    wr.writeBytes(flowEntry6);
-                    wr.flush();
-                    wr.close();
-
-                    wr.writeBytes(flowEntry7);
-                    wr.flush();
-                    wr.close();
-
-                    int responseCode = connection.getResponseCode();
-                    System.out.println("\nSending 'POST' request to URL : " + OVS_ENDPOINT);
-                    System.out.println("Post parameters : \n" + flowEntry1 + "\n\n" +
-                            flowEntry2 + "\n\n" + flowEntry3 + "\n\n" + flowEntry4 + "\n\n" +
-                            flowEntry5 + "\n\n" + flowEntry6 + "\n\n" + flowEntry7);
-                    System.out.println("Response Code : " + responseCode);
-
+                    doPost(flowEntry1);
+                    doPost(flowEntry2);
+                    doPost(flowEntry3);
+                    doPost(flowEntry4);
+                    doPost(flowEntry5);
+                    doPost(flowEntry6);
+                    doPost(flowEntry7);
                     break;
 
                 case FIDO_FLOW:
                     //TODO:: Setup stuff
                     break;
             }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
         publishOK(eventIdentifier, "192.168.1.1");
     }
 
@@ -185,5 +144,29 @@ public class FlowModifier {
         } catch (MqttException | UnsupportedEncodingException e) {
             e.printStackTrace();
         }
+    }
+
+    private boolean doPost(String flowEntry) {
+        try {
+            URL obj = new URL(OVS_ENDPOINT);
+            HttpURLConnection connection = (HttpURLConnection) obj.openConnection();
+            connection.setRequestMethod("POST");
+            // Send post request
+            connection.setDoOutput(true);
+            DataOutputStream wr = new DataOutputStream(connection.getOutputStream());
+            wr.writeBytes(flowEntry);
+            wr.flush();
+            wr.close();
+
+            int responseCode = connection.getResponseCode();
+            System.out.println("\nSending 'POST' request to URL : " + OVS_ENDPOINT);
+            System.out.println("Post parameters : \n" + flowEntry);
+//            System.out.println("Response Code : " + responseCode);
+        } catch (IOException e) {
+            e.printStackTrace();
+            return false;
+        }
+        return true;
+
     }
 }
