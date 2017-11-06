@@ -1,21 +1,17 @@
 package net.floodlightcontroller.mactracker;
 
 
-import org.apache.http.HttpHeaders;
 import org.eclipse.paho.client.mqttv3.*;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.net.ssl.HttpsURLConnection;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.net.MalformedURLException;
-import java.net.ProtocolException;
+import java.net.HttpURLConnection;
 import java.net.URL;
-import java.util.Arrays;
 
 import static org.apache.commons.codec.CharEncoding.UTF_8;
 
@@ -68,9 +64,7 @@ public class FlowModifier {
 
             @Override
             public void messageArrived(String topic, MqttMessage message) throws Exception {
-//                String messageIncoming = Arrays.toString(message.getPayload());
                 String messageIncoming = message.toString();
-                ;
                 String eventIdentifier = topic.substring(topic.lastIndexOf(File.separator) + 1);
                 System.out.println(topic + " : " + messageIncoming);
                 handleEventRequest(messageIncoming, eventIdentifier);
@@ -96,8 +90,8 @@ public class FlowModifier {
                     //TODO:: Setup stuff
                     URL obj = new URL(OVS_ENDPOINT);
 
-                    HttpsURLConnection connection = (HttpsURLConnection) obj.openConnection();
-                    connection.setHostnameVerifier((arg0, arg1) -> true);
+                    HttpURLConnection connection = (HttpURLConnection) obj.openConnection();
+//                    connection.setHostnameVerifier((arg0, arg1) -> true);
                     //add request header
                     connection.setRequestMethod("POST");
                     String flowEntry1 = "{\"switch\":\"00:00:d6:ed:a6:a2:0c:44\",\"name\":\"flow-1-2-1\"," +
@@ -135,21 +129,33 @@ public class FlowModifier {
                             "\"eth_type\":\"0x0800\",\"eth_src\":\"62:a4:25:4c:7b:a0\", \"ipv4_src\":\"192.168.1.2\"," +
                             " \"actions\":\"\"}";
 
-                            // Send post request
+                    // Send post request
                     connection.setDoOutput(true);
                     DataOutputStream wr = new DataOutputStream(connection.getOutputStream());
                     wr.writeBytes(flowEntry1);
                     wr.flush();
+                    wr.close();
+
                     wr.writeBytes(flowEntry2);
                     wr.flush();
+                    wr.close();
+
                     wr.writeBytes(flowEntry3);
                     wr.flush();
+                    wr.close();
+
                     wr.writeBytes(flowEntry4);
                     wr.flush();
+                    wr.close();
+
                     wr.writeBytes(flowEntry5);
                     wr.flush();
+                    wr.close();
+
                     wr.writeBytes(flowEntry6);
                     wr.flush();
+                    wr.close();
+
                     wr.writeBytes(flowEntry7);
                     wr.flush();
                     wr.close();
