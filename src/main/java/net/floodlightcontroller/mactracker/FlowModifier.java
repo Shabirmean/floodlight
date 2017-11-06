@@ -124,6 +124,7 @@ public class FlowModifier implements MqttCallback {
 
         MqttPublisher(MqttClient mqttPublisherClient){
             this.mqttPublisherClient = mqttPublisherClient;
+
         }
 
         private void handleEventRequest(String customer, String eventIdentifier) {
@@ -208,7 +209,11 @@ public class FlowModifier implements MqttCallback {
 
         private void publishOK(String eventIdentifier, String ingressIP) {
             try {
+                MqttConnectOptions options = new MqttConnectOptions();
+                options.setMqttVersion(MqttConnectOptions.MQTT_VERSION_3_1);
+                mqttPublisherClient.connect(options);
                 mqttPublisherClient.publish(PUBLISH_TOPIC, (eventIdentifier + ":" + ingressIP).getBytes(UTF_8), 2, false);
+                mqttPublisherClient.disconnect();
             } catch (MqttException | UnsupportedEncodingException e) {
                 e.printStackTrace();
             }
