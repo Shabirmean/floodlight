@@ -209,7 +209,9 @@ public class FlowModifier implements MqttCallback {
                 options.setMqttVersion(MqttConnectOptions.MQTT_VERSION_3_1);
                 MqttClient mqttPublisherClient = new MqttClient(BROKER_URI, MqttClient.generateClientId(), new MemoryPersistence());
                 mqttPublisherClient.connect(options);
-                mqttPublisherClient.publish(PUBLISH_TOPIC, (eventIdentifier + ":" + ingressIP).getBytes(UTF_8), 2, false);
+                String topic = PUBLISH_TOPIC + File.separator + eventIdentifier;
+                mqttPublisherClient.publish(topic, (eventIdentifier + ":" + ingressIP).getBytes(UTF_8), 2,
+                        false);
                 mqttPublisherClient.disconnect();
             } catch (MqttException | UnsupportedEncodingException e) {
                 e.printStackTrace();
