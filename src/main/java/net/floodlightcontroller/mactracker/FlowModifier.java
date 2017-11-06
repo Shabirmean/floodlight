@@ -21,7 +21,7 @@ public class FlowModifier implements MqttCallback {
     private String OVS_BRIDGE;
     static final String BROKER_URI = "tcp://localhost:1883";
     static final String EVENT_TYPE = "UPLOAD";
-    static final String SUBSCRIBE_TOPIC = "ciena" + File.separator + EVENT_TYPE + File.separator + "#";
+    static final String SUBSCRIBE_TOPIC = "ciena" + File.separator + EVENT_TYPE + File.separator + "/request/#";
     static final String PUBLISH_TOPIC = "ciena" + File.separator + EVENT_TYPE + File.separator + "reply";
     static final String BELL_FLOW = "BELL";
     static final String FIDO_FLOW = "FIDO";
@@ -58,7 +58,7 @@ public class FlowModifier implements MqttCallback {
                 }
 
                 try {
-                    Thread.sleep(3000);
+                    Thread.sleep(5000);
                 } catch (InterruptedException ex) {
                     logger.error("MQTT Connect-Thread Sleep Interrupt Exception.");
                 }
@@ -110,8 +110,7 @@ public class FlowModifier implements MqttCallback {
         String messageIncoming = mqttMessage.toString();
         String eventIdentifier = topic.substring(topic.lastIndexOf(File.separator) + 1);
         System.out.println(topic + " : " + messageIncoming);
-        MqttClient tempClient = new MqttClient(BROKER_URI, MqttClient.generateClientId(), new MemoryPersistence());
-        new MqttPublisher(tempClient).handleEventRequest(messageIncoming, eventIdentifier);
+        new MqttPublisher().handleEventRequest(messageIncoming, eventIdentifier);
     }
 
     @Override
@@ -120,11 +119,7 @@ public class FlowModifier implements MqttCallback {
     }
 
     private class MqttPublisher{
-        MqttClient mqttPublisherClient;
-
-        MqttPublisher(MqttClient mqttPublisherClient){
-            this.mqttPublisherClient = mqttPublisherClient;
-
+        MqttPublisher(){
         }
 
         private void handleEventRequest(String customer, String eventIdentifier) {
@@ -211,6 +206,7 @@ public class FlowModifier implements MqttCallback {
             try {
                 MqttConnectOptions options = new MqttConnectOptions();
                 options.setMqttVersion(MqttConnectOptions.MQTT_VERSION_3_1);
+                MqttClient mqttPublisherClient = new MqttClient(BROKER_URI, MqttClient.generateClientId(), new MemoryPersistence());
                 mqttPublisherClient.connect(options);
                 mqttPublisherClient.publish(PUBLISH_TOPIC, (eventIdentifier + ":" + ingressIP).getBytes(UTF_8), 2, false);
                 mqttPublisherClient.disconnect();
