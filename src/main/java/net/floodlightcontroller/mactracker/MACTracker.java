@@ -59,14 +59,6 @@ public class MACTracker implements IOFMessageListener, IFloodlightModule, IOFSwi
         return l;
     }
 
-
-//    ca:70:c4:1a:d7:28 - 192.168.1.1
-//    ea:73:aa:1e:64:13 - 192.168.1.2
-//    d6:f0:14:70:f7:5b - 192.168.1.3
-//    66:c4:a7:42:04:b7 - 192.168.1.4
-//    4e:c8:0c:c7:e8:c9 - 192.168.1.5
-//    e6:1d:c8:fe:c9:ad - 192.168.1.6
-
     @Override
     public void init(FloodlightModuleContext context) throws FloodlightModuleException {
         logger = LoggerFactory.getLogger(MACTracker.class);

@@ -69,20 +69,6 @@ public class FlowModifier implements MqttCallback {
         Thread subscriberThread = new Thread(subscriber);
         subscriberThread.setDaemon(true);
         subscriberThread.start();
-
-        MqttPublisher initFlowPublisher = new MqttPublisher();
-        initFlowPublisher.doPost(StaticFlowEntries.GOTO_TABLE_1);
-        initFlowPublisher.doPost(StaticFlowEntries.GOTO_TABLE_2);
-        initFlowPublisher.doPost(StaticFlowEntries.GOTO_TABLE_3);
-        initFlowPublisher.doPost(StaticFlowEntries.DROP_AT_T1);
-        initFlowPublisher.doPost(StaticFlowEntries.DROP_AT_T2);
-        initFlowPublisher.doPost(StaticFlowEntries.DROP_AT_T3);
-        initFlowPublisher.doPost(StaticFlowEntries.GOTO_TABLE_4);
-        initFlowPublisher.doPost(StaticFlowEntries.GOTO_TABLE_5);
-        initFlowPublisher.doPost(StaticFlowEntries.GOTO_TABLE_6);
-        initFlowPublisher.doPost(StaticFlowEntries.DROP_AT_T4);
-        initFlowPublisher.doPost(StaticFlowEntries.DROP_AT_T5);
-        initFlowPublisher.doPost(StaticFlowEntries.DROP_AT_T6);
     }
 
     @Override
@@ -113,20 +99,32 @@ public class FlowModifier implements MqttCallback {
             switch (customer.toUpperCase()) {
                 case BELL_FLOW:
                     //TODO:: Setup stuff
+                    doPost(StaticFlowEntries.GOTO_TABLE_1);
+                    doPost(StaticFlowEntries.GOTO_TABLE_2);
+                    doPost(StaticFlowEntries.GOTO_TABLE_3);
+                    doPost(StaticFlowEntries.DROP_AT_T1);
+                    doPost(StaticFlowEntries.DROP_AT_T2);
+                    doPost(StaticFlowEntries.DROP_AT_T3);
                     doPost(StaticFlowEntries.ALLOW_C1_C2);
                     doPost(StaticFlowEntries.ALLOW_C2_C1);
                     doPost(StaticFlowEntries.ALLOW_C2_C3);
                     doPost(StaticFlowEntries.ALLOW_C3_C2);
-//                    doPost(StaticFlowEntries.NORMAL_FLOW_MODE);
+                    doPost(StaticFlowEntries.NORMAL_FLOW_MODE);
                     entryContainerIP = StaticFlowEntryConstants.CONTAINER_IP.C1.getIP();
                     break;
 
                 case FIDO_FLOW:
+                    doPost(StaticFlowEntries.GOTO_TABLE_4);
+                    doPost(StaticFlowEntries.GOTO_TABLE_5);
+                    doPost(StaticFlowEntries.GOTO_TABLE_6);
+                    doPost(StaticFlowEntries.DROP_AT_T4);
+                    doPost(StaticFlowEntries.DROP_AT_T5);
+                    doPost(StaticFlowEntries.DROP_AT_T6);
                     doPost(StaticFlowEntries.ALLOW_C4_C5);
                     doPost(StaticFlowEntries.ALLOW_C5_C4);
                     doPost(StaticFlowEntries.ALLOW_C5_C6);
                     doPost(StaticFlowEntries.ALLOW_C6_C5);
-//                    doPost(StaticFlowEntries.NORMAL_FLOW_MODE);
+                    doPost(StaticFlowEntries.NORMAL_FLOW_MODE);
                     entryContainerIP = StaticFlowEntryConstants.CONTAINER_IP.C4.getIP();
                     break;
             }
