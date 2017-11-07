@@ -69,36 +69,21 @@ public class FlowModifier implements MqttCallback {
         Thread subscriberThread = new Thread(subscriber);
         subscriberThread.setDaemon(true);
         subscriberThread.start();
-    }
 
-//    private void subscribe() {
-//        Runnable subscriber = () -> {
-//            while(!mqttClient.isConnected()) {
-//                try {
-//                    MqttConnectOptions options = new MqttConnectOptions();
-//                    options.setMqttVersion(MqttConnectOptions.MQTT_VERSION_3_1);
-//                    mqttClient.connect(options);
-//
-//                    if (mqttClient.isConnected()) {
-//                        logger.info("############# STARTED MQTT Listener...");
-//                        mqttClient.subscribe(SUBSCRIBE_TOPIC, 1);
-//                    }
-//                } catch (MqttException e) {
-//                    e.printStackTrace();
-//                }
-//
-//                try {
-//                    Thread.sleep(3000);
-//                } catch (InterruptedException ex) {
-//                    logger.error("MQTT Connect-Thread Sleep Interrupt Exception.");
-//                }
-//            }
-//        };
-//
-//        Thread subscriberThread = new Thread(subscriber);
-//        subscriberThread.setDaemon(true);
-//        subscriberThread.start();
-//    }
+        MqttPublisher initFlowPublisher = new MqttPublisher();
+        initFlowPublisher.doPost(StaticFlowEntries.GOTO_TABLE_1);
+        initFlowPublisher.doPost(StaticFlowEntries.GOTO_TABLE_2);
+        initFlowPublisher.doPost(StaticFlowEntries.GOTO_TABLE_3);
+        initFlowPublisher.doPost(StaticFlowEntries.DROP_AT_T1);
+        initFlowPublisher.doPost(StaticFlowEntries.DROP_AT_T2);
+        initFlowPublisher.doPost(StaticFlowEntries.DROP_AT_T3);
+        initFlowPublisher.doPost(StaticFlowEntries.GOTO_TABLE_4);
+        initFlowPublisher.doPost(StaticFlowEntries.GOTO_TABLE_5);
+        initFlowPublisher.doPost(StaticFlowEntries.GOTO_TABLE_6);
+        initFlowPublisher.doPost(StaticFlowEntries.DROP_AT_T4);
+        initFlowPublisher.doPost(StaticFlowEntries.DROP_AT_T5);
+        initFlowPublisher.doPost(StaticFlowEntries.DROP_AT_T6);
+    }
 
     @Override
     public void connectionLost(Throwable throwable) {
@@ -128,68 +113,21 @@ public class FlowModifier implements MqttCallback {
             switch (customer.toUpperCase()) {
                 case BELL_FLOW:
                     //TODO:: Setup stuff
-//                    String flowEntry1 = "{\"switch\":\"00:00:d6:ed:a6:a2:0c:44\",\"name\":\"flow-1-2-1\"," +
-//                            "\"priority\":\"32768\",\"in_port\":\"1\",\"active\":\"true\", \"eth_type\":\"0x0800\"," +
-//                            "\"eth_src\":\"1e:c7:d9:4c:cb:7d\", \"eth_dst\":\"62:a4:25:4c:7b:a0\", " +
-//                            "\"ipv4_src\":\"192.168.1.1\",\"ipv4_dst\":\"192.168.1.2\", \"actions\":\"output=normal\"}";
-//
-//                    String flowEntry2 = "{\"switch\":\"00:00:d6:ed:a6:a2:0c:44\",\"name\":\"flow-1-other\"," +
-//                            "\"priority\":\"32767\",\"in_port\":\"1\",\"active\":\"true\", \"eth_type\":\"0x0800\"," +
-//                            "\"eth_src\":\"1e:c7:d9:4c:cb:7d\", \"ipv4_src\":\"192.168.1.1\", " +
-//                            "\"instruction_goto_table\":\"1\"}";
-//
-//                    String flowEntry3 = "{\"switch\":\"00:00:d6:ed:a6:a2:0c:44\",\"name\":\"flow-1=tab-1\"," +
-//                            "\"table\":\"1\"," + "\"priority\":\"32768\",\"in_port\":\"1\",\"active\":\"true\", " +
-//                            "\"eth_type\":\"0x0800\"," + "\"eth_src\":\"1e:c7:d9:4c:cb:7d\", " +
-//                            "\"ipv4_src\":\"192.168.1.1\", \"actions\":\"\"}";
-//
-//                    String flowEntry4 = "{\"switch\":\"00:00:d6:ed:a6:a2:0c:44\",\"name\":\"flow-1-2-3\"," +
-//                            "\"priority\":\"32768\",\"in_port\":\"2\",\"active\":\"true\", \"eth_type\":\"0x0800\"," +
-//                            "\"eth_src\":\"62:a4:25:4c:7b:a0\", \"eth_dst\":\"2a:74:6c:22:0f:96\", " +
-//                            "\"ipv4_src\":\"192.168.1.2\",\"ipv4_dst\":\"192.168.1.3\", \"actions\":\"output=normal\"}";
-//
-//                    String flowEntry5 = "{\"switch\":\"00:00:d6:ed:a6:a2:0c:44\",\"name\":\"flow-1-2-2\"," +
-//                            "\"priority\":\"32768\",\"in_port\":\"2\",\"active\":\"true\", \"eth_type\":\"0x0800\"," +
-//                            "\"eth_src\":\"62:a4:25:4c:7b:a0\", \"eth_dst\":\"1e:c7:d9:4c:cb:7d\", " +
-//                            "\"ipv4_src\":\"192.168.1.2\",\"ipv4_dst\":\"192.168.1.1\", \"actions\":\"output=normal\"}";
-//
-//                    String flowEntry6 = "{\"switch\":\"00:00:d6:ed:a6:a2:0c:44\",\"name\":\"flow-2-other\"," +
-//                            "\"priority\":\"32767\",\"in_port\":\"2\",\"active\":\"true\", \"eth_type\":\"0x0800\"," +
-//                            "\"eth_src\":\"62:a4:25:4c:7b:a0\", \"ipv4_src\":\"192.168.1.2\", " +
-//                            "\"instruction_goto_table\":\"1\"}";
-//
-//                    String flowEntry7 = "{\"switch\":\"00:00:d6:ed:a6:a2:0c:44\",\"name\":\"flow-2=tab-1\"," +
-//                            "\"table\":\"1\",\"priority\":\"32768\",\"in_port\":\"2\",\"active\":\"true\", " +
-//                            "\"eth_type\":\"0x0800\",\"eth_src\":\"62:a4:25:4c:7b:a0\", \"ipv4_src\":\"192.168.1.2\"," +
-//                            " \"actions\":\"\"}";
-
-                    doPost(StaticFlowEntries.GOTO_TABLE_1);
-                    doPost(StaticFlowEntries.GOTO_TABLE_2);
-                    doPost(StaticFlowEntries.GOTO_TABLE_3);
-                    doPost(StaticFlowEntries.DROP_AT_T1);
-                    doPost(StaticFlowEntries.DROP_AT_T2);
-                    doPost(StaticFlowEntries.DROP_AT_T3);
                     doPost(StaticFlowEntries.ALLOW_C1_C2);
                     doPost(StaticFlowEntries.ALLOW_C2_C1);
                     doPost(StaticFlowEntries.ALLOW_C2_C3);
                     doPost(StaticFlowEntries.ALLOW_C3_C2);
-                    doPost(StaticFlowEntries.NORMAL_FLOW_MODE);
-                    entryContainerIP = "192.168.1.1";
+//                    doPost(StaticFlowEntries.NORMAL_FLOW_MODE);
+                    entryContainerIP = StaticFlowEntryConstants.CONTAINER_IP.C1.getIP();
                     break;
 
                 case FIDO_FLOW:
-                    doPost(StaticFlowEntries.GOTO_TABLE_4);
-                    doPost(StaticFlowEntries.GOTO_TABLE_5);
-                    doPost(StaticFlowEntries.GOTO_TABLE_6);
-                    doPost(StaticFlowEntries.DROP_AT_T4);
-                    doPost(StaticFlowEntries.DROP_AT_T5);
-                    doPost(StaticFlowEntries.DROP_AT_T6);
                     doPost(StaticFlowEntries.ALLOW_C4_C5);
                     doPost(StaticFlowEntries.ALLOW_C5_C4);
                     doPost(StaticFlowEntries.ALLOW_C5_C6);
                     doPost(StaticFlowEntries.ALLOW_C6_C5);
-                    doPost(StaticFlowEntries.NORMAL_FLOW_MODE);
-                    entryContainerIP = "192.168.1.4";
+//                    doPost(StaticFlowEntries.NORMAL_FLOW_MODE);
+                    entryContainerIP = StaticFlowEntryConstants.CONTAINER_IP.C4.getIP();
                     break;
             }
             publishOK(eventIdentifier, entryContainerIP);
