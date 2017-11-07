@@ -124,58 +124,75 @@ public class FlowModifier implements MqttCallback {
         }
 
         private void handleEventRequest(String customer, String eventIdentifier) {
+            String entryContainerIP = "";
             switch (customer.toUpperCase()) {
                 case BELL_FLOW:
                     //TODO:: Setup stuff
-                    String flowEntry1 = "{\"switch\":\"00:00:d6:ed:a6:a2:0c:44\",\"name\":\"flow-1-2-1\"," +
-                            "\"priority\":\"32768\",\"in_port\":\"1\",\"active\":\"true\", \"eth_type\":\"0x0800\"," +
-                            "\"eth_src\":\"1e:c7:d9:4c:cb:7d\", \"eth_dst\":\"62:a4:25:4c:7b:a0\", " +
-                            "\"ipv4_src\":\"192.168.1.1\",\"ipv4_dst\":\"192.168.1.2\", \"actions\":\"output=normal\"}";
+//                    String flowEntry1 = "{\"switch\":\"00:00:d6:ed:a6:a2:0c:44\",\"name\":\"flow-1-2-1\"," +
+//                            "\"priority\":\"32768\",\"in_port\":\"1\",\"active\":\"true\", \"eth_type\":\"0x0800\"," +
+//                            "\"eth_src\":\"1e:c7:d9:4c:cb:7d\", \"eth_dst\":\"62:a4:25:4c:7b:a0\", " +
+//                            "\"ipv4_src\":\"192.168.1.1\",\"ipv4_dst\":\"192.168.1.2\", \"actions\":\"output=normal\"}";
+//
+//                    String flowEntry2 = "{\"switch\":\"00:00:d6:ed:a6:a2:0c:44\",\"name\":\"flow-1-other\"," +
+//                            "\"priority\":\"32767\",\"in_port\":\"1\",\"active\":\"true\", \"eth_type\":\"0x0800\"," +
+//                            "\"eth_src\":\"1e:c7:d9:4c:cb:7d\", \"ipv4_src\":\"192.168.1.1\", " +
+//                            "\"instruction_goto_table\":\"1\"}";
+//
+//                    String flowEntry3 = "{\"switch\":\"00:00:d6:ed:a6:a2:0c:44\",\"name\":\"flow-1=tab-1\"," +
+//                            "\"table\":\"1\"," + "\"priority\":\"32768\",\"in_port\":\"1\",\"active\":\"true\", " +
+//                            "\"eth_type\":\"0x0800\"," + "\"eth_src\":\"1e:c7:d9:4c:cb:7d\", " +
+//                            "\"ipv4_src\":\"192.168.1.1\", \"actions\":\"\"}";
+//
+//                    String flowEntry4 = "{\"switch\":\"00:00:d6:ed:a6:a2:0c:44\",\"name\":\"flow-1-2-3\"," +
+//                            "\"priority\":\"32768\",\"in_port\":\"2\",\"active\":\"true\", \"eth_type\":\"0x0800\"," +
+//                            "\"eth_src\":\"62:a4:25:4c:7b:a0\", \"eth_dst\":\"2a:74:6c:22:0f:96\", " +
+//                            "\"ipv4_src\":\"192.168.1.2\",\"ipv4_dst\":\"192.168.1.3\", \"actions\":\"output=normal\"}";
+//
+//                    String flowEntry5 = "{\"switch\":\"00:00:d6:ed:a6:a2:0c:44\",\"name\":\"flow-1-2-2\"," +
+//                            "\"priority\":\"32768\",\"in_port\":\"2\",\"active\":\"true\", \"eth_type\":\"0x0800\"," +
+//                            "\"eth_src\":\"62:a4:25:4c:7b:a0\", \"eth_dst\":\"1e:c7:d9:4c:cb:7d\", " +
+//                            "\"ipv4_src\":\"192.168.1.2\",\"ipv4_dst\":\"192.168.1.1\", \"actions\":\"output=normal\"}";
+//
+//                    String flowEntry6 = "{\"switch\":\"00:00:d6:ed:a6:a2:0c:44\",\"name\":\"flow-2-other\"," +
+//                            "\"priority\":\"32767\",\"in_port\":\"2\",\"active\":\"true\", \"eth_type\":\"0x0800\"," +
+//                            "\"eth_src\":\"62:a4:25:4c:7b:a0\", \"ipv4_src\":\"192.168.1.2\", " +
+//                            "\"instruction_goto_table\":\"1\"}";
+//
+//                    String flowEntry7 = "{\"switch\":\"00:00:d6:ed:a6:a2:0c:44\",\"name\":\"flow-2=tab-1\"," +
+//                            "\"table\":\"1\",\"priority\":\"32768\",\"in_port\":\"2\",\"active\":\"true\", " +
+//                            "\"eth_type\":\"0x0800\",\"eth_src\":\"62:a4:25:4c:7b:a0\", \"ipv4_src\":\"192.168.1.2\"," +
+//                            " \"actions\":\"\"}";
 
-                    String flowEntry2 = "{\"switch\":\"00:00:d6:ed:a6:a2:0c:44\",\"name\":\"flow-1-other\"," +
-                            "\"priority\":\"32767\",\"in_port\":\"1\",\"active\":\"true\", \"eth_type\":\"0x0800\"," +
-                            "\"eth_src\":\"1e:c7:d9:4c:cb:7d\", \"ipv4_src\":\"192.168.1.1\", " +
-                            "\"instruction_goto_table\":\"1\"}";
-
-                    String flowEntry3 = "{\"switch\":\"00:00:d6:ed:a6:a2:0c:44\",\"name\":\"flow-1=tab-1\"," +
-                            "\"table\":\"1\"," + "\"priority\":\"32768\",\"in_port\":\"1\",\"active\":\"true\", " +
-                            "\"eth_type\":\"0x0800\"," + "\"eth_src\":\"1e:c7:d9:4c:cb:7d\", " +
-                            "\"ipv4_src\":\"192.168.1.1\", \"actions\":\"\"}";
-
-                    String flowEntry4 = "{\"switch\":\"00:00:d6:ed:a6:a2:0c:44\",\"name\":\"flow-1-2-3\"," +
-                            "\"priority\":\"32768\",\"in_port\":\"2\",\"active\":\"true\", \"eth_type\":\"0x0800\"," +
-                            "\"eth_src\":\"62:a4:25:4c:7b:a0\", \"eth_dst\":\"2a:74:6c:22:0f:96\", " +
-                            "\"ipv4_src\":\"192.168.1.2\",\"ipv4_dst\":\"192.168.1.3\", \"actions\":\"output=normal\"}";
-
-                    String flowEntry5 = "{\"switch\":\"00:00:d6:ed:a6:a2:0c:44\",\"name\":\"flow-1-2-2\"," +
-                            "\"priority\":\"32768\",\"in_port\":\"2\",\"active\":\"true\", \"eth_type\":\"0x0800\"," +
-                            "\"eth_src\":\"62:a4:25:4c:7b:a0\", \"eth_dst\":\"1e:c7:d9:4c:cb:7d\", " +
-                            "\"ipv4_src\":\"192.168.1.2\",\"ipv4_dst\":\"192.168.1.1\", \"actions\":\"output=normal\"}";
-
-                    String flowEntry6 = "{\"switch\":\"00:00:d6:ed:a6:a2:0c:44\",\"name\":\"flow-2-other\"," +
-                            "\"priority\":\"32767\",\"in_port\":\"2\",\"active\":\"true\", \"eth_type\":\"0x0800\"," +
-                            "\"eth_src\":\"62:a4:25:4c:7b:a0\", \"ipv4_src\":\"192.168.1.2\", " +
-                            "\"instruction_goto_table\":\"1\"}";
-
-                    String flowEntry7 = "{\"switch\":\"00:00:d6:ed:a6:a2:0c:44\",\"name\":\"flow-2=tab-1\"," +
-                            "\"table\":\"1\",\"priority\":\"32768\",\"in_port\":\"2\",\"active\":\"true\", " +
-                            "\"eth_type\":\"0x0800\",\"eth_src\":\"62:a4:25:4c:7b:a0\", \"ipv4_src\":\"192.168.1.2\"," +
-                            " \"actions\":\"\"}";
-
-                    doPost(flowEntry1);
-                    doPost(flowEntry2);
-                    doPost(flowEntry3);
-                    doPost(flowEntry4);
-                    doPost(flowEntry5);
-                    doPost(flowEntry6);
-                    doPost(flowEntry7);
+                    doPost(StaticFlowEntries.GOTO_TABLE_1);
+                    doPost(StaticFlowEntries.GOTO_TABLE_2);
+                    doPost(StaticFlowEntries.GOTO_TABLE_3);
+                    doPost(StaticFlowEntries.DROP_AT_T1);
+                    doPost(StaticFlowEntries.DROP_AT_T2);
+                    doPost(StaticFlowEntries.DROP_AT_T3);
+                    doPost(StaticFlowEntries.ALLOW_C1_C2);
+                    doPost(StaticFlowEntries.ALLOW_C2_C1);
+                    doPost(StaticFlowEntries.ALLOW_C2_C3);
+                    doPost(StaticFlowEntries.ALLOW_C3_C2);
+                    doPost(StaticFlowEntries.NORMAL_FLOW_MODE);
+                    entryContainerIP = "192.168.1.1";
                     break;
 
                 case FIDO_FLOW:
-                    //TODO:: Setup stuff
+                    doPost(StaticFlowEntries.GOTO_TABLE_4);
+                    doPost(StaticFlowEntries.GOTO_TABLE_5);
+                    doPost(StaticFlowEntries.GOTO_TABLE_6);
+                    doPost(StaticFlowEntries.DROP_AT_T4);
+                    doPost(StaticFlowEntries.DROP_AT_T5);
+                    doPost(StaticFlowEntries.DROP_AT_T6);
+                    doPost(StaticFlowEntries.ALLOW_C4_C5);
+                    doPost(StaticFlowEntries.ALLOW_C5_C4);
+                    doPost(StaticFlowEntries.ALLOW_C5_C6);
+                    doPost(StaticFlowEntries.ALLOW_C6_C5);
+                    doPost(StaticFlowEntries.NORMAL_FLOW_MODE);
+                    entryContainerIP = "192.168.1.4";
                     break;
             }
-            publishOK(eventIdentifier, "192.168.1.1");
+            publishOK(eventIdentifier, entryContainerIP);
         }
 
 
