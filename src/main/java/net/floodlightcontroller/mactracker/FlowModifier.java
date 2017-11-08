@@ -99,6 +99,15 @@ public class FlowModifier implements MqttCallback {
             switch (customer.toUpperCase()) {
                 case BELL_FLOW:
                     //TODO:: Setup stuff
+
+                    doPost(StaticFlowEntries.GOTO_TABLE_4);
+                    doPost(StaticFlowEntries.GOTO_TABLE_5);
+                    doPost(StaticFlowEntries.GOTO_TABLE_6);
+                    doPost(StaticFlowEntries.DROP_AT_T4);
+                    doPost(StaticFlowEntries.DROP_AT_T5);
+                    doPost(StaticFlowEntries.DROP_AT_T6);
+
+
                     doPost(StaticFlowEntries.GOTO_TABLE_1);
                     doPost(StaticFlowEntries.GOTO_TABLE_2);
                     doPost(StaticFlowEntries.GOTO_TABLE_3);
@@ -114,6 +123,15 @@ public class FlowModifier implements MqttCallback {
                     break;
 
                 case FIDO_FLOW:
+
+                    doPost(StaticFlowEntries.GOTO_TABLE_1);
+                    doPost(StaticFlowEntries.GOTO_TABLE_2);
+                    doPost(StaticFlowEntries.GOTO_TABLE_3);
+                    doPost(StaticFlowEntries.DROP_AT_T1);
+                    doPost(StaticFlowEntries.DROP_AT_T2);
+                    doPost(StaticFlowEntries.DROP_AT_T3);
+
+                    
                     doPost(StaticFlowEntries.GOTO_TABLE_4);
                     doPost(StaticFlowEntries.GOTO_TABLE_5);
                     doPost(StaticFlowEntries.GOTO_TABLE_6);
