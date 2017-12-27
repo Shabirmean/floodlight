@@ -16,3 +16,4 @@ findbugs-results
 *.iml
 .metadata/
 /bin/
+/src/main/resources/web

@@ -27,7 +27,7 @@ public class FlowModifier implements MqttCallback {
     static final String FIDO_FLOW = "FIDO";
     static final String OVS_ENDPOINT = "http://localhost:8081/wm/staticflowpusher/json";
 
-    public FlowModifier(String ovsBridge) {
+    FlowModifier(String ovsBridge) {
         this.OVS_BRIDGE = ovsBridge;
     }
 
