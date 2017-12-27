@@ -9,7 +9,7 @@ class FlowControllerConstants {
     public static final int MAX_PRIORITY = 32768;
     public static final int DEFAULT_FLOW_TABLE = 0;
     public static final String SEP = File.separator;
-    public static final String PERIOD = "\\.";
+    public static final String PERIOD = ".";
     public static final String ZERO = "0";
     static final String CIENA = "ciena";
     static final String CMANAGER_FMANAGER = "cm_fm";

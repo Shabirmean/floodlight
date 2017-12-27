@@ -283,7 +283,7 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
 
     private String getCustomerFromSubnet(IPv4Address srcIp) throws FlowControllerException {
         System.out.println("@@@@@@@@@@@@@@@@ " + srcIp.toString());
-        String[] ipStringArr = srcIp.toString().split(PERIOD);
+        String[] ipStringArr = srcIp.toString().split("\\" + PERIOD);
         System.out.println("@@@@@@@@@@@@@@@@ |||||||| " + ipStringArr.length);
         StringBuilder subnetString = new StringBuilder();
         for (int i = 0; i < 3; i++) {
