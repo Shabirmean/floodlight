@@ -29,6 +29,5 @@ net.floodlightcontroller.learningswitch.LearningSwitch
 net.floodlightcontroller.statistics.StatisticsCollector
 net.floodlightcontroller.routing.RoutingManager
 net.floodlightcontroller.cpanalyzer.CPAnalyzer
-net.floodlightcontroller.mactracker.MACTracker
 net.floodlightcontroller.cienaflowcontroller.FlowController
 net.floodlightcontroller.pktinhistory.PktInHistory
