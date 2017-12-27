@@ -105,6 +105,7 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
         OFInstructions instructions = myFactory.instructions();
 
         OFPort ofPort = OFMessageUtils.getInPort((OFPacketIn) msg);
+        System.out.println("@@@@@@@@@@@@@@@@ $$$$$$$$$$$$$$ \n " + ofPort.getPortNumber() + " \n $$$$$$$$$$$$$$ @@@@@@@@@@@@@@@@");
         Ethernet eth = IFloodlightProviderService.bcStore.get(cntx, IFloodlightProviderService.CONTEXT_PI_PAYLOAD);
 
         try {
@@ -134,8 +135,8 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
 
                 OFFlowAdd goToTableFlow = myFactory.buildFlowAdd()
                         .setBufferId(OFBufferId.NO_BUFFER)
-                        .setHardTimeout(3600)
-                        .setIdleTimeout(10)
+//                        .setHardTimeout(3600)
+//                        .setIdleTimeout(10)
                         .setPriority(MAX_PRIORITY)
                         .setMatch(topLevelMatch)
                         .setInstructions(gotoTableInstructionList)
@@ -172,8 +173,8 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
 //                OFFlowAdd allowNormalFlow = myFactory.buildFlowAdd()
                 OFFlowAdd allowNormalFlow = builder
                         .setBufferId(OFBufferId.NO_BUFFER)
-                        .setHardTimeout(3600)
-                        .setIdleTimeout(10)
+//                        .setHardTimeout(3600)
+//                        .setIdleTimeout(10)
                         .setPriority(MAX_PRIORITY)
 //                        .setMatch(allowFlowMatch)
                         .setInstructions(normalFlowInstructionList)
@@ -187,8 +188,8 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
                 dropFlowInstructionList.add(dropFlowInstruction);
                 OFFlowAdd dropFlow = myFactory.buildFlowAdd()
                         .setBufferId(OFBufferId.NO_BUFFER)
-                        .setHardTimeout(3600)
-                        .setIdleTimeout(10)
+//                        .setHardTimeout(3600)
+//                        .setIdleTimeout(10)
                         .setPriority(MAX_PRIORITY - 2)
                         .setMatch(topLevelMatch)
                         .setInstructions(dropFlowInstructionList)
@@ -280,12 +281,9 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
 
 
     private String getCustomerFromSubnet(IPv4Address srcIp) throws FlowControllerException {
-        System.out.println("@@@@@@@@@@@@@@@@ " + srcIp.toString());
         String[] ipStringArr = srcIp.toString().split("\\" + PERIOD);
-        System.out.println("@@@@@@@@@@@@@@@@ |||||||| " + ipStringArr.length);
         StringBuilder subnetString = new StringBuilder();
         for (int i = 0; i < 3; i++) {
-            System.out.println("@@@@@@@@@@@@@@@@ |||||||| " + ipStringArr[i]);
             subnetString.append(ipStringArr[i]).append(PERIOD);
         }
         subnetString.append(ZERO);
