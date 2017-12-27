@@ -44,7 +44,6 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
     static ConcurrentHashMap<String, String> subnetToCustomerMap = new ConcurrentHashMap<>();
     static ConcurrentHashMap<String, HashMap<String, CustomerContainer>> containerMap = new ConcurrentHashMap<>();
     static ConcurrentHashMap<String, ArrayList<String>> customerEventIdMap = new ConcurrentHashMap<>();
-    private Set<Long> macAddresses;
     private static final int ADJACENT_CONTAINERS = 2;
     private static final int LEFT_CONTAINER_INDX = 0;
     private static final int RIGHT_CONTAINER_INDX = 1;
@@ -66,7 +65,6 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
     public void init(FloodlightModuleContext context) throws FloodlightModuleException {
         logger = LoggerFactory.getLogger(FlowController.class);
         this.floodlightProvider = context.getServiceImpl(IFloodlightProviderService.class);
-        this.macAddresses = new ConcurrentSkipListSet<>();
         MqttListener mqttListener = new MqttListener();
         mqttListener.init();
     }
@@ -149,11 +147,11 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
                 for (CustomerContainer adjContainer: adjacentContainers) {
                     if (adjContainer != null) {
                         IPv4Address ipAdd = IPv4Address.of(adjContainer.getIpAddress());
-                        MacAddress macAdd = MacAddress.of(adjContainer.getMacAddress());
+//                        MacAddress macAdd = MacAddress.of(adjContainer.getMacAddress());
                         Match allowAdjacentFlowMatch = myFactory.buildMatch()
                                 .setExact(MatchField.ETH_TYPE, EthType.IPv4)
                                 .setExact(MatchField.IPV4_DST, ipAdd)
-                                .setExact(MatchField.ETH_DST, macAdd)
+//                                .setExact(MatchField.ETH_DST, macAdd)
                                 .setExact(MatchField.IN_PORT, ofPort)
                                 .build();
                         builder.setMatch(allowAdjacentFlowMatch);
