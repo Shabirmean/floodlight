@@ -105,7 +105,8 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
         OFInstructions instructions = myFactory.instructions();
 
         OFPort ofPort = OFMessageUtils.getInPort((OFPacketIn) msg);
-        System.out.println("@@@@@@@@@@@@@@@@ $$$$$$$$$$$$$$ \n " + ofPort.getPortNumber() + " \n $$$$$$$$$$$$$$ @@@@@@@@@@@@@@@@");
+        System.out.println("@@@@@@@@@@@@@@@@ $$$$$$$$$$$$$$ \n " + ofPort.getPortNumber() + " \n $$$$$$$$$$$$$$ " +
+                "@@@@@@@@@@@@@@@@");
         Ethernet eth = IFloodlightProviderService.bcStore.get(cntx, IFloodlightProviderService.CONTEXT_PI_PAYLOAD);
 
         try {
@@ -145,7 +146,7 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
 
                 CustomerContainer[] adjacentContainers = getAdjacentContainers(srcContainer, customerContainers);
                 OFFlowAdd.Builder builder = myFactory.buildFlowAdd();
-                for (CustomerContainer adjContainer: adjacentContainers) {
+                for (CustomerContainer adjContainer : adjacentContainers) {
                     if (adjContainer != null) {
                         IPv4Address ipAdd = IPv4Address.of(adjContainer.getIpAddress());
 //                        MacAddress macAdd = MacAddress.of(adjContainer.getMacAddress());
@@ -155,32 +156,57 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
 //                                .setExact(MatchField.ETH_DST, macAdd)
                                 .setExact(MatchField.IN_PORT, ofPort)
                                 .build();
-                        builder.setMatch(allowAdjacentFlowMatch);
-                    }
-                }
+//                        builder.setMatch(allowAdjacentFlowMatch);
 
-                ArrayList<OFInstruction> normalFlowInstructionList = new ArrayList<>();
-                ArrayList<OFAction> normalFlowActionList = new ArrayList<>();
+//                        -------------------
+                        ArrayList<OFInstruction> normalFlowInstructionList = new ArrayList<>();
+                        ArrayList<OFAction> normalFlowActionList = new ArrayList<>();
 //                OFActionSetField normalFlowAction = actions.buildSetField().setField(
 //                            oxms.buildActsetOutput().setValue(OFPort.NORMAL).build()
 //                        ).build();
-                OFActionOutput normalFlowAction =
-                        actions.buildOutput().setMaxLen(0xFFffFFff).setPort(OFPort.NORMAL).build();
-                normalFlowActionList.add(normalFlowAction);
-                OFInstructionApplyActions normalFlowInstruction =
-                        instructions.buildApplyActions().setActions(normalFlowActionList).build();
-                normalFlowInstructionList.add(normalFlowInstruction);
+                        OFActionOutput normalFlowAction =
+                                actions.buildOutput().setMaxLen(0xFFffFFff).setPort(OFPort.NORMAL).build();
+                        normalFlowActionList.add(normalFlowAction);
+                        OFInstructionApplyActions normalFlowInstruction =
+                                instructions.buildApplyActions().setActions(normalFlowActionList).build();
+                        normalFlowInstructionList.add(normalFlowInstruction);
 //                OFFlowAdd allowNormalFlow = myFactory.buildFlowAdd()
-                OFFlowAdd allowNormalFlow = builder
-                        .setBufferId(OFBufferId.NO_BUFFER)
+                        OFFlowAdd allowNormalFlow = builder
+                                .setBufferId(OFBufferId.NO_BUFFER)
 //                        .setHardTimeout(3600)
 //                        .setIdleTimeout(10)
-                        .setPriority(MAX_PRIORITY)
-//                        .setMatch(allowFlowMatch)
-                        .setInstructions(normalFlowInstructionList)
-                        .setTableId(TableId.of(ofPort.getPortNumber()))
-                        .build();
-
+                                .setPriority(MAX_PRIORITY)
+                                .setMatch(allowAdjacentFlowMatch)
+                                .setInstructions(normalFlowInstructionList)
+                                .setTableId(TableId.of(ofPort.getPortNumber()))
+                                .build();
+                        ovsSwitch.write(allowNormalFlow);
+//                        -------------------
+                    }
+                }
+//                        -------------------
+//                ArrayList<OFInstruction> normalFlowInstructionList = new ArrayList<>();
+//                ArrayList<OFAction> normalFlowActionList = new ArrayList<>();
+////                OFActionSetField normalFlowAction = actions.buildSetField().setField(
+////                            oxms.buildActsetOutput().setValue(OFPort.NORMAL).build()
+////                        ).build();
+//                OFActionOutput normalFlowAction =
+//                        actions.buildOutput().setMaxLen(0xFFffFFff).setPort(OFPort.NORMAL).build();
+//                normalFlowActionList.add(normalFlowAction);
+//                OFInstructionApplyActions normalFlowInstruction =
+//                        instructions.buildApplyActions().setActions(normalFlowActionList).build();
+//                normalFlowInstructionList.add(normalFlowInstruction);
+////                OFFlowAdd allowNormalFlow = myFactory.buildFlowAdd()
+//                OFFlowAdd allowNormalFlow = builder
+//                        .setBufferId(OFBufferId.NO_BUFFER)
+////                        .setHardTimeout(3600)
+////                        .setIdleTimeout(10)
+//                        .setPriority(MAX_PRIORITY)
+////                        .setMatch(allowFlowMatch)
+//                        .setInstructions(normalFlowInstructionList)
+//                        .setTableId(TableId.of(ofPort.getPortNumber()))
+//                        .build();
+//                        -------------------
                 ArrayList<OFInstruction> dropFlowInstructionList = new ArrayList<>();
                 ArrayList<OFAction> dropFlowActionList = new ArrayList<>();
                 OFInstructionApplyActions dropFlowInstruction =
@@ -197,7 +223,7 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
                         .build();
 
                 ovsSwitch.write(goToTableFlow);
-                ovsSwitch.write(allowNormalFlow);
+//                ovsSwitch.write(allowNormalFlow);
                 ovsSwitch.write(dropFlow);
 
 //                if (dstContainer != null) {
