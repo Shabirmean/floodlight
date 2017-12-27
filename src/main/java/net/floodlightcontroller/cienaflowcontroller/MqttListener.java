@@ -101,11 +101,17 @@ public class MqttListener implements MqttCallback {
         try {
             Object obj = parser.parse(message);
             JSONObject jsonObject = (JSONObject) obj;
+            logger.info("++++++++++++++++++++++++++++++++++++++++++");
+            logger.info("++++++++++++++++++++++++++++++++++++++++++");
+            logger.info("++++++++++++++++++++++++++++++++++++++++++");
             logger.info("Received JSON Object from container-manager:: " + jsonObject);
 
             String customer = ((String) jsonObject.get(FlowControllerConstants.JSON_ATTRIB_CUSTOMER)).toUpperCase();
             containerList = FlowController.containerMap.get(customer);
             if (containerList != null) {
+                logger.info("++++++++++++++++++++++++++++++++++++++++++");
+                logger.info("++++++++++++++++++++++++++++++++++++++++++");
+                logger.info("++++++++++++++++++++++++++++++++++++++++++");
                 logger.error("Container map for customer-" + customer + " already exists. Discarding this call");
                 status = false;
             }
@@ -117,6 +123,9 @@ public class MqttListener implements MqttCallback {
             String pipeline = (String) jsonObject.get(FlowControllerConstants.JSON_ATTRIB_PIPELINE);
 
             if (containers.size() != count) {
+                logger.info("++++++++++++++++++++++++++++++++++++++++++");
+                logger.info("++++++++++++++++++++++++++++++++++++++++++");
+                logger.info("++++++++++++++++++++++++++++++++++++++++++");
                 logger.warn("Container count and meta-info count does not match for newly received information.");
                 status = false;
             } else {
@@ -150,6 +159,9 @@ public class MqttListener implements MqttCallback {
             }
         } catch (ParseException e) {
             //TODO:: Handle exceptions correctly
+            logger.info("++++++++++++++++++++++++++++++++++++++++++");
+            logger.info("++++++++++++++++++++++++++++++++++++++++++");
+            logger.info("++++++++++++++++++++++++++++++++++++++++++");
             status = false;
             e.printStackTrace();
         }
@@ -158,6 +170,10 @@ public class MqttListener implements MqttCallback {
 
     private void respondToContainerManager(String eventId, boolean status) {
         String responseToCM = String.format(FlowControllerConstants.RESPONSE_MSG_FORMAT, eventId, status);
+        logger.info("++++++++++++++++++++++++++++++++++++++++++");
+        logger.info("++++++++++++++++++++++++++++++++++++++++++");
+        logger.info("++++++++++++++++++++++++++++++++++++++++++");
+        logger.info("++++++++++++++++++++++++++++++++++++++++++" + responseToCM);
         try {
             MqttConnectOptions options = new MqttConnectOptions();
             options.setMqttVersion(MqttConnectOptions.MQTT_VERSION_3_1);
