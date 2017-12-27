@@ -286,6 +286,7 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
         String[] ipStringArr = srcIp.toString().split(PERIOD);
         StringBuilder subnetString = new StringBuilder();
         for (int i = 0; i < 3; i++) {
+            System.out.println("@@@@@@@@@@@@@@@@ |||||||| " + ipStringArr[i]);
             subnetString.append(ipStringArr[i]).append(PERIOD);
         }
         subnetString.append(ZERO);
