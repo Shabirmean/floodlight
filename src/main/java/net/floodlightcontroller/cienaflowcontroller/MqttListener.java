@@ -118,7 +118,7 @@ public class MqttListener implements MqttCallback {
             containerList = new HashMap<>();
             subnet = (String) jsonObject.get(FlowControllerConstants.JSON_ATTRIB_SUBNET);
             eventId = (String) jsonObject.get(FlowControllerConstants.JSON_ATTRIB_EVENTID);
-            int count = (Integer) jsonObject.get(FlowControllerConstants.JSON_ATTRIB_COUNT);
+            int count = Integer.parseInt((String) jsonObject.get(FlowControllerConstants.JSON_ATTRIB_COUNT));
             JSONArray containers = (JSONArray) jsonObject.get(FlowControllerConstants.JSON_ATTRIB_CONTAINERS);
             String pipeline = (String) jsonObject.get(FlowControllerConstants.JSON_ATTRIB_PIPELINE);
 
