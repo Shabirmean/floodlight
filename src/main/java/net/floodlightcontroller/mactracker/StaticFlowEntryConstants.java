@@ -55,6 +55,10 @@ public class StaticFlowEntryConstants {
             "\"" + PRIORITY + "\":\"%s\",\"" + IN_PORT + "\":\"%s\",\"" + ACTIVE + "\":\"%s\", \"" + ETH_TYPE +
             "\":\"%s\",\"" + SRC_MAC + "\":\"%s\", \"" + SRC_IP + "\":\"%s\", \"" + GOTO_TABLE + "\":\"%s\"}";
 
+
+
+
+
     public static final String DROP_PACKET_FLOW = "{\"" + SWITCH + "\":\"%s\",\"" + FLOW_NAME + "\":\"%s\"," +
             "\"" + TABLE + "\":\"%s\",\"" + PRIORITY + "\":\"%s\",\"" + IN_PORT + "\":\"%s\",\"" + ACTIVE +
             "\":\"%s\",\"" + ETH_TYPE + "\":\"%s\",\"" + SRC_MAC + "\":\"%s\", \"" + SRC_IP + "\":\"%s\", \"" +

@@ -47,6 +47,7 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
     private static final int ADJACENT_CONTAINERS = 2;
     private static final int LEFT_CONTAINER_INDX = 0;
     private static final int RIGHT_CONTAINER_INDX = 1;
+    private static final String INGRESS_CONTAINER_IP = "192.168.0.250";
 
 
     @Override
@@ -105,8 +106,6 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
         OFInstructions instructions = myFactory.instructions();
 
         OFPort ofPort = OFMessageUtils.getInPort((OFPacketIn) msg);
-        System.out.println("@@@@@@@@@@@@@@@@ $$$$$$$$$$$$$$ \n " + ofPort.getPortNumber() + " \n $$$$$$$$$$$$$$ " +
-                "@@@@@@@@@@@@@@@@");
         Ethernet eth = IFloodlightProviderService.bcStore.get(cntx, IFloodlightProviderService.CONTEXT_PI_PAYLOAD);
 
         try {
@@ -115,8 +114,58 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
                 IPv4 ipv4 = (IPv4) eth.getPayload();
                 IPv4Address srcIp = ipv4.getSourceAddress();
                 logger.info("################ MAC Address: {} seen with IP: {}", srcMac, srcIp);
-//                IPv4Address dstIp = ipv4.getDestinationAddress();
 
+                if (srcIp.toString().equals(INGRESS_CONTAINER_IP)) {
+                    //TODO:: NEED to check if its an entry container
+                    Match ingressFlowMatch = myFactory.buildMatch()
+                            .setExact(MatchField.ETH_TYPE, EthType.IPv4)
+                            .setExact(MatchField.IPV4_SRC, srcIp)
+                            .setExact(MatchField.ETH_SRC, srcMac)
+                            .setExact(MatchField.IN_PORT, ofPort)
+                            .build();
+
+                    Match ingressFlowOutMatch = myFactory.buildMatch()
+                            .setExact(MatchField.ETH_TYPE, EthType.IPv4)
+                            .setExact(MatchField.IPV4_DST, srcIp)
+                            .setExact(MatchField.ETH_DST, srcMac)
+                            .build();
+
+                    OFFlowAdd.Builder builder = myFactory.buildFlowAdd();
+                    ArrayList<OFInstruction> ingressFlowInstructionList = new ArrayList<>();
+                    ArrayList<OFAction> ingressFlowActionList = new ArrayList<>();
+
+                    OFActionOutput ingressFlowAction =
+                            actions.buildOutput().setMaxLen(0xFFffFFff).setPort(OFPort.NORMAL).build();
+                    ingressFlowActionList.add(ingressFlowAction);
+                    OFInstructionApplyActions ingressFlowInstruction =
+                            instructions.buildApplyActions().setActions(ingressFlowActionList).build();
+                    ingressFlowInstructionList.add(ingressFlowInstruction);
+                    OFFlowAdd allowIngressFlow = builder
+                            .setBufferId(OFBufferId.NO_BUFFER)
+//                        .setHardTimeout(3600)
+//                        .setIdleTimeout(10)
+                            .setPriority(MAX_PRIORITY)
+                            .setMatch(ingressFlowMatch)
+                            .setInstructions(ingressFlowInstructionList)
+                            .setTableId(TableId.of(DEFAULT_FLOW_TABLE))
+                            .build();
+                    ovsSwitch.write(allowIngressFlow);
+
+
+                    allowIngressFlow = builder
+                            .setBufferId(OFBufferId.NO_BUFFER)
+//                        .setHardTimeout(3600)
+//                        .setIdleTimeout(10)
+                            .setPriority(MAX_PRIORITY)
+                            .setMatch(ingressFlowOutMatch)
+                            .setInstructions(ingressFlowInstructionList)
+                            .setTableId(TableId.of(DEFAULT_FLOW_TABLE))
+                            .build();
+                    ovsSwitch.write(allowIngressFlow);
+                    return Command.CONTINUE;
+                }
+
+//                IPv4Address dstIp = ipv4.getDestinationAddress();
                 String customer = getCustomerFromSubnet(srcIp);
                 HashMap<String, CustomerContainer> customerContainers = containerMap.get(customer);
                 CustomerContainer srcContainer = customerContainers.get(srcIp.toString());
@@ -143,6 +192,7 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
                         .setInstructions(gotoTableInstructionList)
                         .setTableId(TableId.of(DEFAULT_FLOW_TABLE))
                         .build();
+                ovsSwitch.write(goToTableFlow);
 
                 CustomerContainer[] adjacentContainers = getAdjacentContainers(srcContainer, customerContainers);
                 OFFlowAdd.Builder builder = myFactory.buildFlowAdd();
@@ -156,21 +206,16 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
 //                                .setExact(MatchField.ETH_DST, macAdd)
                                 .setExact(MatchField.IN_PORT, ofPort)
                                 .build();
-//                        builder.setMatch(allowAdjacentFlowMatch);
 
-//                        -------------------
                         ArrayList<OFInstruction> normalFlowInstructionList = new ArrayList<>();
                         ArrayList<OFAction> normalFlowActionList = new ArrayList<>();
-//                OFActionSetField normalFlowAction = actions.buildSetField().setField(
-//                            oxms.buildActsetOutput().setValue(OFPort.NORMAL).build()
-//                        ).build();
+
                         OFActionOutput normalFlowAction =
                                 actions.buildOutput().setMaxLen(0xFFffFFff).setPort(OFPort.NORMAL).build();
                         normalFlowActionList.add(normalFlowAction);
                         OFInstructionApplyActions normalFlowInstruction =
                                 instructions.buildApplyActions().setActions(normalFlowActionList).build();
                         normalFlowInstructionList.add(normalFlowInstruction);
-//                OFFlowAdd allowNormalFlow = myFactory.buildFlowAdd()
                         OFFlowAdd allowNormalFlow = builder
                                 .setBufferId(OFBufferId.NO_BUFFER)
 //                        .setHardTimeout(3600)
@@ -181,32 +226,9 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
                                 .setTableId(TableId.of(ofPort.getPortNumber()))
                                 .build();
                         ovsSwitch.write(allowNormalFlow);
-//                        -------------------
                     }
                 }
-//                        -------------------
-//                ArrayList<OFInstruction> normalFlowInstructionList = new ArrayList<>();
-//                ArrayList<OFAction> normalFlowActionList = new ArrayList<>();
-////                OFActionSetField normalFlowAction = actions.buildSetField().setField(
-////                            oxms.buildActsetOutput().setValue(OFPort.NORMAL).build()
-////                        ).build();
-//                OFActionOutput normalFlowAction =
-//                        actions.buildOutput().setMaxLen(0xFFffFFff).setPort(OFPort.NORMAL).build();
-//                normalFlowActionList.add(normalFlowAction);
-//                OFInstructionApplyActions normalFlowInstruction =
-//                        instructions.buildApplyActions().setActions(normalFlowActionList).build();
-//                normalFlowInstructionList.add(normalFlowInstruction);
-////                OFFlowAdd allowNormalFlow = myFactory.buildFlowAdd()
-//                OFFlowAdd allowNormalFlow = builder
-//                        .setBufferId(OFBufferId.NO_BUFFER)
-////                        .setHardTimeout(3600)
-////                        .setIdleTimeout(10)
-//                        .setPriority(MAX_PRIORITY)
-////                        .setMatch(allowFlowMatch)
-//                        .setInstructions(normalFlowInstructionList)
-//                        .setTableId(TableId.of(ofPort.getPortNumber()))
-//                        .build();
-//                        -------------------
+
                 ArrayList<OFInstruction> dropFlowInstructionList = new ArrayList<>();
                 ArrayList<OFAction> dropFlowActionList = new ArrayList<>();
                 OFInstructionApplyActions dropFlowInstruction =
@@ -222,86 +244,13 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
                         .setTableId(TableId.of(ofPort.getPortNumber()))
                         .build();
 
-                ovsSwitch.write(goToTableFlow);
-//                ovsSwitch.write(allowNormalFlow);
                 ovsSwitch.write(dropFlow);
-
-//                if (dstContainer != null) {
-////                    int flowTableId = srcContainer.getFlowTableId();
-//                    OFFactory myFactory = OFFactories.getFactory(msg.getVersion());
-//                    Match myMatch = myFactory.buildMatch()
-//                            .setExact(MatchField.ETH_TYPE, EthType.IPv4)
-//                            .setExact(MatchField.IPV4_SRC, srcIp)
-//                            .setExact(MatchField.ETH_SRC, srcMac)
-////                            .setExact(MatchField.IN_PORT, OFPort.of(1))
-////                            .setExact(MatchField.IP_PROTO, IpProtocol.TCP)
-////                            .setExact(MatchField.TCP_DST, TransportPort.of(80))
-//                            .build();
-//
-//                    OFInstructions instructions = myFactory.instructions();
-//                    OFInstructionGotoTable gotoTableInstruction = instructions.buildGotoTable().setTableId(TableId
-// .of(flowTableId)).build();
-//                    ArrayList<OFInstruction> instructionList = new ArrayList<>();
-//                    instructionList.add(gotoTableInstruction);
-//
-//                    OFFlowAdd goToTableFlow = myFactory.buildFlowAdd()
-//                            .setBufferId(OFBufferId.NO_BUFFER)
-//                            .setHardTimeout(3600)
-//                            .setIdleTimeout(10)
-//                            .setPriority(MAX_PRIORITY)
-//                            .setMatch(myMatch)
-//                            .setInstructions(instructionList)
-//                            .setTableId(TableId.of(DEFAULT_FLOW_TABLE))
-//                            .build();
-//                    ovsSwitch.write(goToTableFlow);
-//
-////                    if (dstContainer.getPipeLineIndex() == srcContainer.getPipeLineIndex() + 1) {
-////                        // TODO:: Allow Flow
-////                    } else {
-////                        // TODO:: Drop Flow, disallow. Trigger warning
-////                    }
-//
-//                } else {
-//                    // TODO:: Drop Flow, disallow. Trigger warning
-//                }
-
-
-//                if (ipv4.getProtocol() == IpProtocol.TCP) {
-//                    TCP tcp = (TCP) ipv4.getPayload();
-//
-//                    TransportPort srcPort = tcp.getSourcePort();
-//                    TransportPort dstPort = tcp.getDestinationPort();
-//                    short flags = tcp.getFlags();
-//
-//                } else if (ipv4.getProtocol() == IpProtocol.UDP) {
-//                    UDP udp = (UDP) ipv4.getPayload();
-//
-//                    TransportPort srcPort = udp.getSourcePort();
-//                    TransportPort dstPort = udp.getDestinationPort();
-//
-//                }
-
-//        } else if (eth.getEtherType() == EthType.ARP) {
-//            /* We got an ARP packet; get the payload from Ethernet */
-//            ARP arp = (ARP) eth.getPayload();
-//
-//        } else {
-//            /* Unhandled ethertype */
             }
 
         } catch (FlowControllerException e) {
             //TODO:: Handle exceptions properly
             e.printStackTrace();
         }
-
-
-//        Ethernet eth = IFloodlightProviderService.bcStore.get(cntx, IFloodlightProviderService.CONTEXT_PI_PAYLOAD);
-//        Long sourceMACHash = eth.getSourceMACAddress().getLong();
-//        if (!macAddresses.contains(sourceMACHash)) {
-//            macAddresses.add(sourceMACHash);
-//            logger.info("MAC Address: {} seen on switch: {}", eth.getSourceMACAddress().toString(), ovsSwitch.getId()
-//                    .toString());
-//        }
         return Command.CONTINUE;
     }
 
