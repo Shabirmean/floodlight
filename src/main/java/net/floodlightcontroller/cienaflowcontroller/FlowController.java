@@ -110,6 +110,16 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
         OFPort ofPort = OFMessageUtils.getInPort((OFPacketIn) msg);
         Ethernet eth = IFloodlightProviderService.bcStore.get(cntx, IFloodlightProviderService.CONTEXT_PI_PAYLOAD);
 
+
+        if (eth.getEtherType() == EthType.IPv4) {
+            MacAddress srcMac = eth.getSourceMACAddress();
+            MacAddress dstMac = eth.getDestinationMACAddress();
+            IPv4 ipv4 = (IPv4) eth.getPayload();
+            IPv4Address srcIp = ipv4.getSourceAddress();
+            IPv4Address dstIp = ipv4.getDestinationAddress();
+            logger.info("################ SOURCE: {" + srcMac + "} - {" + srcIp + "}, " +
+                    "DESTINATION: {" + dstMac + "} - {" + dstIp + "}");
+        }
 //        try {
 //            if (eth.getEtherType() == EthType.IPv4) {
 //                MacAddress srcMac = eth.getSourceMACAddress();
