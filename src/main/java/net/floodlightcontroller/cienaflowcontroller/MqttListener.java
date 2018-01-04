@@ -132,7 +132,11 @@ public class MqttListener implements MqttCallback {
                     int pipelineIndex = Integer.parseInt(pipelineArr[index].trim());
                     CustomerContainer cusContainer = new CustomerContainer(customer, cId, key, cName, ip, mac);
                     cusContainer.setPipeLineIndex(pipelineIndex);
-                    if (pipelineIndex == 1 || pipelineIndex == pipelineArr.length) {
+                    if (pipelineIndex == 1) {
+                        cusContainer.setBorderContainer(true);
+//                        cusContainer.setEntryContainer(true);
+                        FlowController.entryContainerIPSet.add(ip);
+                    } else if (pipelineIndex == pipelineArr.length) {
                         cusContainer.setBorderContainer(true);
                     }
                     containerList.put(ip, cusContainer);

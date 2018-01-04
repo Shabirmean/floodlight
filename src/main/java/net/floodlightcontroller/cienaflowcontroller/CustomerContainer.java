@@ -15,6 +15,7 @@ public class CustomerContainer {
     private String macAddress;
     private int pipeLineIndex;
     private boolean borderContainer;
+//    private boolean entryContainer;
 
     public CustomerContainer(String customer, String cId, String key, String name){
         this.customer = customer;
@@ -85,4 +86,11 @@ public class CustomerContainer {
         this.borderContainer = borderContainer;
     }
 
+//    public boolean isEntryContainer() {
+//        return entryContainer;
+//    }
+//
+//    public void setEntryContainer(boolean entryContainer) {
+//        this.entryContainer = entryContainer;
+//    }
 }
