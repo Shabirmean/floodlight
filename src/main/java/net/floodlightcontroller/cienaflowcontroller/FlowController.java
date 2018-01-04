@@ -113,9 +113,9 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
         Map ovsAttribs  = ovsSwitch.getAttributes();
         System.out.println("################# No of Attributes:: " + ovsAttribs.size());
         for (Object obj: ovsAttribs.keySet()){
-            String key = (String)  obj;
-            String value = (String) ovsAttribs.get(key);
-            System.out.println(key + "  -   "  + value);
+//            String key = (String)  obj;
+//            String value = (String) ovsAttribs.get(key);
+            System.out.println(obj + "  -   "  + ovsAttribs.get(obj));
         }
 
 
