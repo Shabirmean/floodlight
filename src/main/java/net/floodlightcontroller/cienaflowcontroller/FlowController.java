@@ -48,6 +48,7 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
     private static final int LEFT_CONTAINER_INDX = 0;
     private static final int RIGHT_CONTAINER_INDX = 1;
     private static final String INGRESS_IP = "192.168.0.250";
+    private static final String SWITCH_IP = "192.168.0.1";
 
     @Override
     public String getName() {
@@ -158,6 +159,52 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
                             .setTableId(TableId.of(DEFAULT_FLOW_TABLE))
                             .build();
                     ovsSwitch.write(allowIngressFlow);
+                    return Command.CONTINUE;
+
+                } else if (srcIp.toString().equals(SWITCH_IP) || dstIp.toString().equals(SWITCH_IP)) {
+                    Match ovsFlowMatch = myFactory.buildMatch()
+                            .setExact(MatchField.ETH_TYPE, EthType.IPv4)
+                            .setExact(MatchField.IPV4_SRC, srcIp)
+                            .setExact(MatchField.ETH_SRC, srcMac)
+                            .build();
+
+                    OFFlowAdd.Builder builder = myFactory.buildFlowAdd();
+                    ArrayList<OFInstruction> ovsFlowInstructionList = new ArrayList<>();
+                    ArrayList<OFAction> ovsFlowActionList = new ArrayList<>();
+
+                    OFActionOutput ovsFlowAction =
+                            actions.buildOutput().setMaxLen(0xFFffFFff).setPort(OFPort.NORMAL).build();
+                    ovsFlowActionList.add(ovsFlowAction);
+                    OFInstructionApplyActions ovsFlowInstruction =
+                            instructions.buildApplyActions().setActions(ovsFlowActionList).build();
+                    ovsFlowInstructionList.add(ovsFlowInstruction);
+                    OFFlowAdd allowOVSFlow = builder
+                            .setBufferId(OFBufferId.NO_BUFFER)
+//                        .setHardTimeout(3600)
+//                        .setIdleTimeout(10)
+                            .setPriority(MAX_PRIORITY)
+                            .setMatch(ovsFlowMatch)
+                            .setInstructions(ovsFlowInstructionList)
+                            .setTableId(TableId.of(DEFAULT_FLOW_TABLE))
+                            .build();
+                    ovsSwitch.write(allowOVSFlow);
+
+
+                    ovsFlowMatch = myFactory.buildMatch()
+                            .setExact(MatchField.ETH_TYPE, EthType.IPv4)
+                            .setExact(MatchField.IPV4_DST, dstIp)
+                            .setExact(MatchField.ETH_DST, dstMac)
+                            .build();
+                    allowOVSFlow = builder
+                            .setBufferId(OFBufferId.NO_BUFFER)
+//                        .setHardTimeout(3600)
+//                        .setIdleTimeout(10)
+                            .setPriority(MAX_PRIORITY)
+                            .setMatch(ovsFlowMatch)
+                            .setInstructions(ovsFlowInstructionList)
+                            .setTableId(TableId.of(DEFAULT_FLOW_TABLE))
+                            .build();
+                    ovsSwitch.write(allowOVSFlow);
                     return Command.CONTINUE;
                 }
 
