@@ -101,7 +101,7 @@ public class MqttListener implements MqttCallback {
         try {
             Object obj = parser.parse(message);
             JSONObject jsonObject = (JSONObject) obj;
-            logger.info("Received JSON Object from container-manager:: " + jsonObject);
+            logger.info("Received JSON Object from container-manager:: \n" + jsonObject);
 
             String customer = ((String) jsonObject.get(FlowControllerConstants.JSON_ATTRIB_CUSTOMER)).toUpperCase();
             containerList = FlowController.containerMap.get(customer);
