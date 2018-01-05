@@ -127,6 +127,7 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
                 if ( ( srcIp.toString().equals(INGRESS_IP) && entryContainerIPSet.contains(dstIp.toString()) ) ||
                         ( entryContainerIPSet.contains(srcIp.toString()) && dstIp.toString().equals(INGRESS_IP) ) ) {
                     //TODO:: NEED to check if its an entry container
+                    logger.info("######## CAME INSIDE HERE");
                     Match ingressFlowMatch = myFactory.buildMatch()
                             .setExact(MatchField.ETH_TYPE, EthType.IPv4)
                             .setExact(MatchField.IPV4_SRC, srcIp)
