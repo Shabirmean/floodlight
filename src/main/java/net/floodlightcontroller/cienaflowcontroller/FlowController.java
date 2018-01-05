@@ -112,14 +112,18 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
         logger.info("########## OVS-SWITCH SOCKET ADD: " + ovsSocketAddress);
         logger.info("########## OVS-SWITCH INET ADDR: " + inetAddr);
         logger.info("########## OVS-SWITCH IPv4 ADDR: " + ovsIpv4);
+        MacAddress srcMac = null;
+        MacAddress dstMac;
+        IPv4Address srcIp = null;
+        IPv4Address dstIp;
 
         try {
             if (eth.getEtherType() == EthType.IPv4) {
-                MacAddress srcMac = eth.getSourceMACAddress();
-                MacAddress dstMac = eth.getDestinationMACAddress();
+                srcMac = eth.getSourceMACAddress();
+                dstMac = eth.getDestinationMACAddress();
                 IPv4 ipv4 = (IPv4) eth.getPayload();
-                IPv4Address srcIp = ipv4.getSourceAddress();
-                IPv4Address dstIp = ipv4.getDestinationAddress();
+                srcIp = ipv4.getSourceAddress();
+                dstIp = ipv4.getDestinationAddress();
                 logger.info("################ SOURCE: {} seen with IP: {}", srcMac, srcIp);
                 logger.info("################ DESTINATION: {} seen with IP: {}", dstMac, dstIp);
                 logger.info("----------------------------------------------------------------");
@@ -290,8 +294,31 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
 
         } catch (FlowControllerException e) {
             //TODO:: Handle exceptions properly
-            e.printStackTrace();
+//            e.printStackTrace();
+            Match topLevelMatch = myFactory.buildMatch()
+                    .setExact(MatchField.ETH_TYPE, EthType.IPv4)
+                    .setExact(MatchField.IPV4_SRC, srcIp)
+                    .setExact(MatchField.ETH_SRC, srcMac)
+                    .setExact(MatchField.IN_PORT, ofPort)
+                    .build();
+
+            ArrayList<OFInstruction> dropFlowInstructionList = new ArrayList<>();
+            ArrayList<OFAction> dropFlowActionList = new ArrayList<>();
+            OFInstructionApplyActions dropFlowInstruction =
+                    instructions.buildApplyActions().setActions(dropFlowActionList).build();
+            dropFlowInstructionList.add(dropFlowInstruction);
+            OFFlowAdd dropFlow = myFactory.buildFlowAdd()
+                    .setBufferId(OFBufferId.NO_BUFFER)
+//                        .setHardTimeout(3600)
+//                        .setIdleTimeout(10)
+                    .setPriority(MAX_PRIORITY - 2)
+                    .setMatch(topLevelMatch)
+                    .setInstructions(dropFlowInstructionList)
+                    .setTableId(TableId.of(ofPort.getPortNumber()))
+                    .build();
+            ovsSwitch.write(dropFlow);
         }
+
         return Command.CONTINUE;
     }
 
