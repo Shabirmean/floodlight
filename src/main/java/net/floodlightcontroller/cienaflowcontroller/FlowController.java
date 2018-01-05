@@ -71,7 +71,7 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
 
     @Override
     public void startUp(FloodlightModuleContext context) throws FloodlightModuleException {
-//        floodlightProvider.addOFMessageListener(OFType.PACKET_IN, this);
+        floodlightProvider.addOFMessageListener(OFType.PACKET_IN, this);
         debugPrint("CIENA FLOW CONTROLLER IS REGISTERED.");
     }
 
