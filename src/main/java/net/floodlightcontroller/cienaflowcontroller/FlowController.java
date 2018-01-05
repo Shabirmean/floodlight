@@ -109,6 +109,10 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
         InetSocketAddress inetAddr = (InetSocketAddress) ovsSocketAddress;
         IPv4Address ovsIpv4 = IPv4Address.of(inetAddr.getHostString());
 
+
+        System.out.println("########## Switch Description: " + ovsSwitch.getSwitchDescription());
+
+
 //        logger.info("########## OVS-SWITCH SOCKET ADD: " + ovsSocketAddress);
 //        logger.info("########## OVS-SWITCH INET ADDR: " + inetAddr);
 //        logger.info("########## OVS-SWITCH IPv4 ADDR: " + ovsIpv4);
