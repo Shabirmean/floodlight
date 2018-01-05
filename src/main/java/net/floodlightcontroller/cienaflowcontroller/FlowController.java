@@ -114,6 +114,7 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
 //        logger.info("########## OVS-SWITCH INET ADDR: " + inetAddr);
         logger.info("########## OVS-SWITCH IPv4 ADDR: " + ovsIpv4);
         logger.info("########## TABLE-ID: " + ofPort);
+        logger.info("########## ETH-TYPE: " + eth.getEtherType().toString());
         MacAddress srcMac = null;
         MacAddress dstMac = null;
         IPv4Address srcIp = null;
