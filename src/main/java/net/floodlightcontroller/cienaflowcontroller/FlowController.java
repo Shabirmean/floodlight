@@ -110,17 +110,16 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
         SocketAddress ovsSocketAddress = ovsSwitch.getInetAddress();
         InetSocketAddress inetAddr = (InetSocketAddress) ovsSocketAddress;
         IPv4Address ovsIpv4 = IPv4Address.of(inetAddr.getHostString());
-//        logger.info("########## OVS-SWITCH SOCKET ADD: " + ovsSocketAddress);
-//        logger.info("########## OVS-SWITCH INET ADDR: " + inetAddr);
-        logger.info("########## OVS-SWITCH IPv4 ADDR: " + ovsIpv4);
-        logger.info("########## TABLE-ID: " + ofPort);
+        MacAddress switchMac = ovsSwitch.getPort(OFPort.LOCAL).getHwAddr();
         MacAddress srcMac = null;
         MacAddress dstMac = null;
         IPv4Address srcIp = null;
         IPv4Address dstIp = null;
 
-
-        MacAddress switchMac = ovsSwitch.getPort(OFPort.LOCAL).getHwAddr();
+//        logger.info("########## OVS-SWITCH SOCKET ADD: " + ovsSocketAddress);
+//        logger.info("########## OVS-SWITCH INET ADDR: " + inetAddr);
+//        logger.info("########## OVS-SWITCH IPv4 ADDR: " + ovsIpv4);
+//        logger.info("########## TABLE-ID: " + ofPort);
         logger.info("########## SWITCH-MAC: " + switchMac.toString());
 
         try {
@@ -134,10 +133,10 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
                 logger.info("################ DESTINATION: {} seen with IP: {}", dstMac, dstIp);
                 logger.info("----------------------------------------------------------------");
 
-                if ( ( srcIp.toString().equals(INGRESS_IP) && entryContainerIPSet.contains(dstIp.toString()) ) ||
-                        ( entryContainerIPSet.contains(srcIp.toString()) && dstIp.toString().equals(INGRESS_IP) ) ) {
+                if ((srcIp.toString().equals(INGRESS_IP) && entryContainerIPSet.contains(dstIp.toString())) ||
+                        (entryContainerIPSet.contains(srcIp.toString()) && dstIp.toString().equals(INGRESS_IP))) {
                     //TODO:: NEED to check if its an entry container
-                    logger.info("######## CAME INSIDE HERE");
+//                    logger.info("######## CAME INSIDE HERE");
                     Match ingressFlowMatch = myFactory.buildMatch()
                             .setExact(MatchField.ETH_TYPE, EthType.IPv4)
                             .setExact(MatchField.IPV4_SRC, srcIp)
@@ -169,17 +168,15 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
                     ovsSwitch.write(allowIngressFlow);
                     return Command.CONTINUE;
 
-                } else if (srcIp.toString().equals(SWITCH_IP) || dstIp.toString().equals(SWITCH_IP)) {
-//                } else if ( srcMac.toString().equals(SWITCH_MAC) || dstMac.toString().equals(SWITCH_MAC) ) {
-
-
-
-
-
+//                } else if (srcIp.toString().equals(SWITCH_IP) || dstIp.toString().equals(SWITCH_IP)) {
+                } else if (srcMac.toString().equals(switchMac.toString()) ||
+                        dstMac.toString().equals(switchMac.toString())) {
                     Match ovsFlowMatch = myFactory.buildMatch()
                             .setExact(MatchField.ETH_TYPE, EthType.IPv4)
-                            .setExact(MatchField.IPV4_SRC, srcIp)
                             .setExact(MatchField.ETH_SRC, srcMac)
+                            .setExact(MatchField.IPV4_SRC, srcIp)
+                            .setExact(MatchField.ETH_DST, dstMac)
+                            .setExact(MatchField.IPV4_DST, dstIp)
                             .build();
 
                     OFFlowAdd.Builder builder = myFactory.buildFlowAdd();
@@ -203,21 +200,21 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
                             .build();
                     ovsSwitch.write(allowOVSFlow);
 
-
-                    ovsFlowMatch = myFactory.buildMatch()
-                            .setExact(MatchField.ETH_TYPE, EthType.IPv4)
-                            .setExact(MatchField.IPV4_DST, dstIp)
-                            .setExact(MatchField.ETH_DST, dstMac)
-                            .build();
-                    allowOVSFlow = builder
-                            .setBufferId(OFBufferId.NO_BUFFER)
-//                        .setHardTimeout(3600)
-//                        .setIdleTimeout(10)
-                            .setPriority(MAX_PRIORITY)
-                            .setMatch(ovsFlowMatch)
-                            .setInstructions(ovsFlowInstructionList)
-                            .setTableId(TableId.of(DEFAULT_FLOW_TABLE))
-                            .build();
+//
+//                    ovsFlowMatch = myFactory.buildMatch()
+//                            .setExact(MatchField.ETH_TYPE, EthType.IPv4)
+//                            .setExact(MatchField.IPV4_DST, dstIp)
+//                            .setExact(MatchField.ETH_DST, dstMac)
+//                            .build();
+//                    allowOVSFlow = builder
+//                            .setBufferId(OFBufferId.NO_BUFFER)
+////                        .setHardTimeout(3600)
+////                        .setIdleTimeout(10)
+//                            .setPriority(MAX_PRIORITY)
+//                            .setMatch(ovsFlowMatch)
+//                            .setInstructions(ovsFlowInstructionList)
+//                            .setTableId(TableId.of(DEFAULT_FLOW_TABLE))
+//                            .build();
                     ovsSwitch.write(allowOVSFlow);
                     return Command.CONTINUE;
                 }
@@ -306,38 +303,37 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
 
         } catch (FlowControllerException e) {
             //TODO:: Handle exceptions properly
-//            e.printStackTrace();
-            int tableId = ofPort.getPortNumber();
-            if (tableId == OFPort.LOCAL.getPortNumber()) {
-                tableId = DEFAULT_FLOW_TABLE;
-            }
-
-            Match topLevelMatch = myFactory.buildMatch()
-                    .setExact(MatchField.ETH_TYPE, EthType.IPv4)
-                    .setExact(MatchField.IPV4_SRC, srcIp)
-                    .setExact(MatchField.ETH_SRC, srcMac)
-                    .setExact(MatchField.ETH_DST, dstMac)
-                    .setExact(MatchField.IPV4_SRC, dstIp)
-                    .setExact(MatchField.IN_PORT, ofPort)
-                    .build();
-
-            ArrayList<OFInstruction> dropFlowInstructionList = new ArrayList<>();
-            ArrayList<OFAction> dropFlowActionList = new ArrayList<>();
-            OFInstructionApplyActions dropFlowInstruction =
-                    instructions.buildApplyActions().setActions(dropFlowActionList).build();
-            dropFlowInstructionList.add(dropFlowInstruction);
-            OFFlowAdd dropFlow = myFactory.buildFlowAdd()
-                    .setBufferId(OFBufferId.NO_BUFFER)
-//                        .setHardTimeout(3600)
-//                        .setIdleTimeout(10)
-                    .setPriority(MAX_PRIORITY - 2)
-                    .setMatch(topLevelMatch)
-                    .setInstructions(dropFlowInstructionList)
-                    .setTableId(TableId.of(tableId))
-                    .build();
-            ovsSwitch.write(dropFlow);
+            e.printStackTrace();
+//            int tableId = ofPort.getPortNumber();
+//            if (tableId == OFPort.LOCAL.getPortNumber()) {
+//                tableId = DEFAULT_FLOW_TABLE;
+//            }
+//
+//            Match topLevelMatch = myFactory.buildMatch()
+//                    .setExact(MatchField.ETH_TYPE, EthType.IPv4)
+//                    .setExact(MatchField.IPV4_SRC, srcIp)
+//                    .setExact(MatchField.ETH_SRC, srcMac)
+//                    .setExact(MatchField.ETH_DST, dstMac)
+//                    .setExact(MatchField.IPV4_SRC, dstIp)
+//                    .setExact(MatchField.IN_PORT, ofPort)
+//                    .build();
+//
+//            ArrayList<OFInstruction> dropFlowInstructionList = new ArrayList<>();
+//            ArrayList<OFAction> dropFlowActionList = new ArrayList<>();
+//            OFInstructionApplyActions dropFlowInstruction =
+//                    instructions.buildApplyActions().setActions(dropFlowActionList).build();
+//            dropFlowInstructionList.add(dropFlowInstruction);
+//            OFFlowAdd dropFlow = myFactory.buildFlowAdd()
+//                    .setBufferId(OFBufferId.NO_BUFFER)
+////                        .setHardTimeout(3600)
+////                        .setIdleTimeout(10)
+//                    .setPriority(MAX_PRIORITY - 2)
+//                    .setMatch(topLevelMatch)
+//                    .setInstructions(dropFlowInstructionList)
+//                    .setTableId(TableId.of(tableId))
+//                    .build();
+//            ovsSwitch.write(dropFlow);
         }
-
         return Command.CONTINUE;
     }
 
