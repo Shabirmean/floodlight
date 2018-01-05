@@ -114,9 +114,9 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
         logger.info("########## OVS-SWITCH IPv4 ADDR: " + ovsIpv4);
         logger.info("########## TABLE-ID: " + ofPort);
         MacAddress srcMac = null;
-        MacAddress dstMac;
+        MacAddress dstMac = null;
         IPv4Address srcIp = null;
-        IPv4Address dstIp;
+        IPv4Address dstIp = null;
 
         try {
             if (eth.getEtherType() == EthType.IPv4) {
@@ -296,10 +296,17 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
         } catch (FlowControllerException e) {
             //TODO:: Handle exceptions properly
 //            e.printStackTrace();
+            int tableId = ofPort.getPortNumber();
+            if (tableId == OFPort.LOCAL.getPortNumber()) {
+                tableId = DEFAULT_FLOW_TABLE;
+            }
+
             Match topLevelMatch = myFactory.buildMatch()
                     .setExact(MatchField.ETH_TYPE, EthType.IPv4)
                     .setExact(MatchField.IPV4_SRC, srcIp)
                     .setExact(MatchField.ETH_SRC, srcMac)
+                    .setExact(MatchField.ETH_DST, dstMac)
+                    .setExact(MatchField.IPV4_SRC, dstIp)
                     .setExact(MatchField.IN_PORT, ofPort)
                     .build();
 
@@ -315,7 +322,7 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
                     .setPriority(MAX_PRIORITY - 2)
                     .setMatch(topLevelMatch)
                     .setInstructions(dropFlowInstructionList)
-                    .setTableId(TableId.of(ofPort.getPortNumber()))
+                    .setTableId(TableId.of(tableId))
                     .build();
             ovsSwitch.write(dropFlow);
         }
