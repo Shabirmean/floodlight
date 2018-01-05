@@ -1,6 +1,7 @@
 package net.floodlightcontroller.cienaflowcontroller;
 
 import net.floodlightcontroller.core.*;
+import net.floodlightcontroller.core.internal.OFSwitch;
 import net.floodlightcontroller.core.module.FloodlightModuleContext;
 import net.floodlightcontroller.core.module.FloodlightModuleException;
 import net.floodlightcontroller.core.module.IFloodlightModule;
@@ -46,6 +47,7 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
     private static final int RIGHT_CONTAINER_INDX = 1;
     private static final String INGRESS_IP = "192.168.0.250";
     private static final String SWITCH_IP = "192.168.0.1";
+    private static final String SWITCH_MAC = "d6:ed:a6:a2:0c:44";
 
     @Override
     public String getName() {
@@ -108,15 +110,10 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
         SocketAddress ovsSocketAddress = ovsSwitch.getInetAddress();
         InetSocketAddress inetAddr = (InetSocketAddress) ovsSocketAddress;
         IPv4Address ovsIpv4 = IPv4Address.of(inetAddr.getHostString());
-
-
-        System.out.println("########## Switch Description: " + ovsSwitch.getSwitchDescription());
-
-
 //        logger.info("########## OVS-SWITCH SOCKET ADD: " + ovsSocketAddress);
 //        logger.info("########## OVS-SWITCH INET ADDR: " + inetAddr);
-//        logger.info("########## OVS-SWITCH IPv4 ADDR: " + ovsIpv4);
-//        logger.info("########## TABLE-ID: " + ofPort);
+        logger.info("########## OVS-SWITCH IPv4 ADDR: " + ovsIpv4);
+        logger.info("########## TABLE-ID: " + ofPort);
         MacAddress srcMac = null;
         MacAddress dstMac = null;
         IPv4Address srcIp = null;
@@ -169,6 +166,12 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
                     return Command.CONTINUE;
 
                 } else if (srcIp.toString().equals(SWITCH_IP) || dstIp.toString().equals(SWITCH_IP)) {
+//                } else if ( srcMac.toString().equals(SWITCH_MAC) || dstMac.toString().equals(SWITCH_MAC) ) {
+
+
+
+
+
                     Match ovsFlowMatch = myFactory.buildMatch()
                             .setExact(MatchField.ETH_TYPE, EthType.IPv4)
                             .setExact(MatchField.IPV4_SRC, srcIp)
@@ -371,7 +374,6 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
     private void debugPrint(String line) {
         logger.debug("########################### : " + line);
     }
-
 }
 
 
