@@ -6,7 +6,14 @@ package net.floodlightcontroller.cienaflowcontroller;
  */
 public class CustomerContainer {
     private static final String CONTNR_STRING_FORMAT =
-            "{\"key\":\"%s\",\"id\":\"%s\",\"name\":\"%s\",\"ip\":\"%s\",\"mac\":\"%s\"}";
+            "{" +
+                    "\"key\":\"%s\"," +
+                    "\"id\":\"%s\"," +
+                    "\"name\":\"%s\"," +
+                    "\"ip\":\"%s\"," +
+                    "\"mac\":\"%s\"," +
+                    "\"isIngress\":\"%s\"" +
+                    "}";
     private String customer;
     private String cId;
     private String key;
@@ -14,17 +21,16 @@ public class CustomerContainer {
     private String ipAddress;
     private String macAddress;
     private int pipeLineIndex;
-    private boolean borderContainer;
-//    private boolean entryContainer;
+    private boolean borderContainer = false;
 
-    public CustomerContainer(String customer, String cId, String key, String name){
+    public CustomerContainer(String customer, String cId, String key, String name) {
         this.customer = customer;
         this.cId = cId;
         this.key = key;
         this.name = name;
     }
 
-    public CustomerContainer(String customer, String cId, String key, String name, String ip, String mac){
+    public CustomerContainer(String customer, String cId, String key, String name, String ip, String mac) {
         this.customer = customer;
         this.cId = cId;
         this.key = key;
@@ -33,13 +39,8 @@ public class CustomerContainer {
         this.macAddress = mac;
     }
 
-//    public int getFlowTableId(){
-//        String subnetNum = this.ipAddress.split(".")[2];
-//        return Integer.parseInt(subnetNum + Integer.toString(pipeLineIndex));
-//    }
-
-    public String getJSONString(){
-        return String.format(CONTNR_STRING_FORMAT, key, cId, name, ipAddress, macAddress);
+    public String getJSONString() {
+        return String.format(CONTNR_STRING_FORMAT, key, cId, name, ipAddress, macAddress, borderContainer);
     }
 
     public String getCustomer() {
@@ -70,13 +71,13 @@ public class CustomerContainer {
         this.macAddress = macAddress;
     }
 
-    public int getPipeLineIndex() {
-        return pipeLineIndex;
-    }
+//    public int getPipeLineIndex() {
+//        return pipeLineIndex;
+//    }
 
-    public void setPipeLineIndex(int pipeLineIndex) {
-        this.pipeLineIndex = pipeLineIndex;
-    }
+//    public void setPipeLineIndex(int pipeLineIndex) {
+//        this.pipeLineIndex = pipeLineIndex;
+//    }
 
     public boolean isBorderContainer() {
         return borderContainer;
@@ -85,12 +86,4 @@ public class CustomerContainer {
     public void setBorderContainer(boolean borderContainer) {
         this.borderContainer = borderContainer;
     }
-
-//    public boolean isEntryContainer() {
-//        return entryContainer;
-//    }
-//
-//    public void setEntryContainer(boolean entryContainer) {
-//        this.entryContainer = entryContainer;
-//    }
 }

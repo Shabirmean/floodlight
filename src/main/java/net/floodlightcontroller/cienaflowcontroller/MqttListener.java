@@ -114,14 +114,14 @@ public class MqttListener implements MqttCallback {
             eventId = (String) jsonObject.get(FlowControllerConstants.JSON_ATTRIB_EVENTID);
             int count = Integer.parseInt((String) jsonObject.get(FlowControllerConstants.JSON_ATTRIB_COUNT));
             JSONArray containers = (JSONArray) jsonObject.get(FlowControllerConstants.JSON_ATTRIB_CONTAINERS);
-            String pipeline = (String) jsonObject.get(FlowControllerConstants.JSON_ATTRIB_PIPELINE);
+//            String pipeline = (String) jsonObject.get(FlowControllerConstants.JSON_ATTRIB_PIPELINE);
 
             if (containers.size() != count) {
                 logger.warn("Container count and meta-info count does not match for newly received information.");
                 status = false;
             } else {
-                String[] pipelineArr = pipeline.split(",");
-                int index = 0;
+//                String[] pipelineArr = pipeline.split(",");
+//                int index = 0;
                 for (Object container : containers) {
                     JSONObject containerObj = (JSONObject) container;
                     String cId = (String) containerObj.get(FlowControllerConstants.JSON_ATTRIB_ID);
@@ -129,18 +129,19 @@ public class MqttListener implements MqttCallback {
                     String cName = (String) containerObj.get(FlowControllerConstants.JSON_ATTRIB_NAME);
                     String ip = (String) containerObj.get(FlowControllerConstants.JSON_ATTRIB_IP);
                     String mac = (String) containerObj.get(FlowControllerConstants.JSON_ATTRIB_MAC);
-                    int pipelineIndex = Integer.parseInt(pipelineArr[index].trim());
+                    String isIngress = (String) containerObj.get(FlowControllerConstants.JSON_ATTRIB_IS_INGRESS);
+//                    int pipelineIndex = Integer.parseInt(pipelineArr[index].trim());
                     CustomerContainer cusContainer = new CustomerContainer(customer, cId, key, cName, ip, mac);
-                    cusContainer.setPipeLineIndex(pipelineIndex);
-                    if (pipelineIndex == 1) {
-                        cusContainer.setBorderContainer(true);
-//                        cusContainer.setEntryContainer(true);
-                        FlowController.entryContainerIPSet.add(ip);
-                    } else if (pipelineIndex == pipelineArr.length) {
-                        cusContainer.setBorderContainer(true);
-                    }
+                    cusContainer.setBorderContainer(Boolean.parseBoolean(isIngress));
+//                    if (pipelineIndex == 1) {
+//                        cusContainer.setBorderContainer(true);
+////                        cusContainer.setEntryContainer(true);
+//                        FlowController.entryContainerIPSet.add(ip);
+//                    } else if (pipelineIndex == pipelineArr.length) {
+//                        cusContainer.setBorderContainer(true);
+//                    }
                     containerList.put(ip, cusContainer);
-                    index++;
+//                    index++;
                 }
                 FlowController.containerMap.put(customer, containerList);
                 FlowController.subnetToCustomerMap.put(subnet, customer);

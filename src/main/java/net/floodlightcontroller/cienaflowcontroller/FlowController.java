@@ -307,23 +307,23 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
         return customer;
     }
 
-    private CustomerContainer[] getAdjacentContainers(CustomerContainer srcContainer,
-                                                      HashMap<String, CustomerContainer> containerList) {
-        CustomerContainer[] adjacentContainers = new CustomerContainer[ADJACENT_CONTAINERS];
-        String srcIp = srcContainer.getIpAddress();
-        int pipelineIndx = srcContainer.getPipeLineIndex();
-        for (CustomerContainer cusContainer : containerList.values()) {
-            if (!cusContainer.getIpAddress().equals(srcIp)) {
-                int pIndex = cusContainer.getPipeLineIndex();
-                if (pIndex == (pipelineIndx + 1)) {
-                    adjacentContainers[RIGHT_CONTAINER_INDX] = cusContainer;
-                } else if (pIndex == (pipelineIndx - 1)) {
-                    adjacentContainers[LEFT_CONTAINER_INDX] = cusContainer;
-                }
-            }
-        }
-        return adjacentContainers;
-    }
+//    private CustomerContainer[] getAdjacentContainers(CustomerContainer srcContainer,
+//                                                      HashMap<String, CustomerContainer> containerList) {
+//        CustomerContainer[] adjacentContainers = new CustomerContainer[ADJACENT_CONTAINERS];
+//        String srcIp = srcContainer.getIpAddress();
+//        int pipelineIndx = srcContainer.getPipeLineIndex();
+//        for (CustomerContainer cusContainer : containerList.values()) {
+//            if (!cusContainer.getIpAddress().equals(srcIp)) {
+//                int pIndex = cusContainer.getPipeLineIndex();
+//                if (pIndex == (pipelineIndx + 1)) {
+//                    adjacentContainers[RIGHT_CONTAINER_INDX] = cusContainer;
+//                } else if (pIndex == (pipelineIndx - 1)) {
+//                    adjacentContainers[LEFT_CONTAINER_INDX] = cusContainer;
+//                }
+//            }
+//        }
+//        return adjacentContainers;
+//    }
 
     private void debugPrint(String line) {
         logger.debug("########################### : " + line);
