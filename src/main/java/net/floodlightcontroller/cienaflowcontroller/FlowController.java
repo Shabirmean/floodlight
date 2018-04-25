@@ -8,6 +8,10 @@ import net.floodlightcontroller.core.module.IFloodlightModule;
 import net.floodlightcontroller.core.module.IFloodlightService;
 import net.floodlightcontroller.packet.*;
 import net.floodlightcontroller.util.OFMessageUtils;
+import org.eclipse.paho.client.mqttv3.MqttClient;
+import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
+import org.eclipse.paho.client.mqttv3.MqttException;
+import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 import org.projectfloodlight.openflow.protocol.*;
 import org.projectfloodlight.openflow.protocol.action.OFAction;
 import org.projectfloodlight.openflow.protocol.action.OFActionOutput;
@@ -23,12 +27,14 @@ import org.projectfloodlight.openflow.types.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.UnsupportedEncodingException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static net.floodlightcontroller.cienaflowcontroller.FlowControllerConstants.*;
+import static org.apache.commons.codec.CharEncoding.UTF_8;
 
 /**
  * Created by shabirmean on 2017-11-29 with some hope.
@@ -131,8 +137,11 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
                         TransportPort srcPort = udp.getSourcePort();
                         TransportPort dstPort = udp.getDestinationPort();
 
+
+
                         System.out.println("########### UDP Port [Source Port] : " + srcPort);
                         System.out.println("########### UDP Port [Destination Port] : " + dstPort);
+                        System.out.println("########### UDP Payload : " + udp.getPayload());
 
                     }
                 } else if (eth.getEtherType() == EthType.ARP) {
@@ -339,6 +348,25 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
 //        }
         return Command.CONTINUE;
     }
+
+    private void notifyContainerReadyState(String readyContainerIp){
+        String responseToCM = String.format(FlowControllerConstants.RESPONSE_MSG_FORMAT, eventId, status);
+        try {
+            MqttConnectOptions options = new MqttConnectOptions();
+            options.setMqttVersion(MqttConnectOptions.MQTT_VERSION_3_1);
+            String clientId = MqttClient.generateClientId();
+            MqttClient mqttPublisherClient =
+                    new MqttClient(FlowControllerConstants.MQTT_BROKER_URI, clientId, new MemoryPersistence());
+            mqttPublisherClient.connect(options);
+            String topic = FlowControllerConstants.MQTT_PUBLISH_TOPIC;
+            mqttPublisherClient.publish(topic, responseToCM.getBytes(UTF_8), 2, false);
+            mqttPublisherClient.disconnect();
+        } catch (MqttException | UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
+    }
+
+
 
 
     private String getCustomerFromSubnet(IPv4Address srcIp) throws FlowControllerException {
