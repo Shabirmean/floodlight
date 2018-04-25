@@ -34,7 +34,7 @@ public class MqttListener implements MqttCallback {
             try {
                 String clientId = MqttClient.generateClientId();
                 mqttClient = new MqttClient(FlowControllerConstants.MQTT_BROKER_URI, clientId, new MemoryPersistence());
-                mqttClient.setCallback();
+                mqttClient.setCallback(this);
             } catch (MqttException e) {
                 e.printStackTrace();
             }
