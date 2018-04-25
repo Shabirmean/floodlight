@@ -149,7 +149,11 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
 
 
                             Data udpData = (Data) udp.getPayload();
-                            byte[] udpDataBytes = udpData.getData();
+                            byte[] udpDataBytes = new byte[udpData.getData().length];
+                            udpData.deserialize(udpDataBytes, 0, udpData.getData().length);
+//                            byte[] udpDataBytes = udpData.getData();
+
+
 
                             System.out.println("########>>>>>>> " + Arrays.toString(udpDataBytes));
 
