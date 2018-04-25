@@ -349,22 +349,22 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
         return Command.CONTINUE;
     }
 
-    private void notifyContainerReadyState(String readyContainerIp){
-        String responseToCM = String.format(FlowControllerConstants.RESPONSE_MSG_FORMAT, eventId, status);
-        try {
-            MqttConnectOptions options = new MqttConnectOptions();
-            options.setMqttVersion(MqttConnectOptions.MQTT_VERSION_3_1);
-            String clientId = MqttClient.generateClientId();
-            MqttClient mqttPublisherClient =
-                    new MqttClient(FlowControllerConstants.MQTT_BROKER_URI, clientId, new MemoryPersistence());
-            mqttPublisherClient.connect(options);
-            String topic = FlowControllerConstants.MQTT_PUBLISH_TOPIC;
-            mqttPublisherClient.publish(topic, responseToCM.getBytes(UTF_8), 2, false);
-            mqttPublisherClient.disconnect();
-        } catch (MqttException | UnsupportedEncodingException e) {
-            e.printStackTrace();
-        }
-    }
+//    private void notifyContainerReadyState(String readyContainerIp){
+//        String responseToCM = String.format(FlowControllerConstants.RESPONSE_MSG_FORMAT, eventId, status);
+//        try {
+//            MqttConnectOptions options = new MqttConnectOptions();
+//            options.setMqttVersion(MqttConnectOptions.MQTT_VERSION_3_1);
+//            String clientId = MqttClient.generateClientId();
+//            MqttClient mqttPublisherClient =
+//                    new MqttClient(FlowControllerConstants.MQTT_BROKER_URI, clientId, new MemoryPersistence());
+//            mqttPublisherClient.connect(options);
+//            String topic = FlowControllerConstants.MQTT_PUBLISH_TOPIC;
+//            mqttPublisherClient.publish(topic, responseToCM.getBytes(UTF_8), 2, false);
+//            mqttPublisherClient.disconnect();
+//        } catch (MqttException | UnsupportedEncodingException e) {
+//            e.printStackTrace();
+//        }
+//    }
 
 
 
