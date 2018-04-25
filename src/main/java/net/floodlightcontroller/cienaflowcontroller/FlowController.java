@@ -51,7 +51,7 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
     private static final int LEFT_CONTAINER_INDX = 0;
     private static final int RIGHT_CONTAINER_INDX = 1;
     private static final String INGRESS_IP = "192.168.0.250";
-    private static final String SWITCH_IP = "192.168.0.1";
+    private static final String SWITCH_IP = "193.168.0.1";
     private static final String SWITCH_MAC = "d6:ed:a6:a2:0c:44";
 
     @Override
@@ -122,35 +122,27 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
                     System.out.println("########### IPAddress [Destination] : " + dstIp);
                     System.out.println("########### IPAddress [Source] : " + srcIp);
 
-                    if (ipv4.getProtocol() == IpProtocol.TCP) {
-                        TCP tcp = (TCP) ipv4.getPayload();
+                    if (!srcIp.toString().equals(SWITCH_IP)) {
+                        if (ipv4.getProtocol() == IpProtocol.TCP) {
+                            TCP tcp = (TCP) ipv4.getPayload();
 
-                        TransportPort srcPort = tcp.getSourcePort();
-                        TransportPort dstPort = tcp.getDestinationPort();
-                        short flags = tcp.getFlags();
+                            TransportPort srcPort = tcp.getSourcePort();
+                            TransportPort dstPort = tcp.getDestinationPort();
+                            short flags = tcp.getFlags();
 
-                        System.out.println("########### TCP Port [Source Port] : " + srcPort);
-                        System.out.println("########### TCP Port [Destination Port] : " + dstPort);
+                            System.out.println("########### TCP Port [Source Port] : " + srcPort);
+                            System.out.println("########### TCP Port [Destination Port] : " + dstPort);
 
-                    } else if (ipv4.getProtocol() == IpProtocol.UDP) {
-                        UDP udp = (UDP) ipv4.getPayload();
-                        TransportPort srcPort = udp.getSourcePort();
-                        TransportPort dstPort = udp.getDestinationPort();
+                        } else if (ipv4.getProtocol() == IpProtocol.UDP) {
+                            UDP udp = (UDP) ipv4.getPayload();
+                            TransportPort srcPort = udp.getSourcePort();
+                            TransportPort dstPort = udp.getDestinationPort();
 
-
-
-                        System.out.println("########### UDP Port [Source Port] : " + srcPort);
-                        System.out.println("########### UDP Port [Destination Port] : " + dstPort);
-
-                        byte[] newArray = new byte[udp.getLength()];
-                        try {
-                            udp.getPayload().deserialize(newArray,0, udp.getLength());
-                        } catch (PacketParsingException e) {
-                            e.printStackTrace();
+                            System.out.println("########### UDP Port [Source Port] : " + srcPort);
+                            System.out.println("########### UDP Port [Destination Port] : " + dstPort);
+                            System.out.println(">>>>>>>>>>>>>>>> " + srcPort + ":" + dstPort);
+//                            notifyContainerReadyState();
                         }
-
-                        System.out.println("########### UDP Payload : " + Arrays.toString(newArray));
-
                     }
                 } else if (eth.getEtherType() == EthType.ARP) {
                     ARP arp = (ARP) eth.getPayload();
