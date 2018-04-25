@@ -28,8 +28,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.UnsupportedEncodingException;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.net.UnknownHostException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -45,8 +47,11 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
     static ConcurrentHashMap<String, String> subnetToCustomerMap = new ConcurrentHashMap<>();
     static ConcurrentHashMap<String, HashMap<String, CustomerContainer>> containerMap = new ConcurrentHashMap<>();
     static ConcurrentHashMap<String, ArrayList<String>> customerEventIdMap = new ConcurrentHashMap<>();
-    static HashSet<String> entryContainerIPSet = new HashSet<>();
+    static ConcurrentHashMap<String, String> ipToEventIdMap = new ConcurrentHashMap<>();
+    static ConcurrentHashMap<String, String> readyStateEvents = new ConcurrentHashMap<>();
 
+    static final Object LOCK = new Object();
+    private static MqttListener mqttListener;
     private static final int ADJACENT_CONTAINERS = 2;
     private static final int LEFT_CONTAINER_INDX = 0;
     private static final int RIGHT_CONTAINER_INDX = 1;
@@ -70,7 +75,7 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
     public void init(FloodlightModuleContext context) throws FloodlightModuleException {
         logger = LoggerFactory.getLogger(FlowController.class);
         this.floodlightProvider = context.getServiceImpl(IFloodlightProviderService.class);
-        MqttListener mqttListener = new MqttListener();
+        mqttListener = new MqttListener();
         mqttListener.init();
     }
 
@@ -141,13 +146,36 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
                             System.out.println("########### UDP Port [Source Port] : " + srcPort);
                             System.out.println("########### UDP Port [Destination Port] : " + dstPort);
                             System.out.println(">>>>>>>>>>>>>>>> " + srcIp + ":" + dstPort);
-                            notifyContainerReadyState(srcIp + ":" + dstPort);
+
+
+                            Data udpData = (Data) udp.getPayload();
+                            byte[] udpDataBytes = udpData.getData();
+
+                            System.out.println("########>>>>>>> " + Arrays.toString(udpDataBytes));
+
+
+
+//
+//                            String containerIp = srcIp.toString();
+//                            synchronized (FlowController.LOCK) {
+//                                String eventId = ipToEventIdMap.get(containerIp);
+//                                String responseToCM;
+//                                if (eventId != null) {
+//                                    if (FlowController.readyStateEvents.contains(eventId)) {
+//                                        responseToCM = FlowController.readyStateEvents.get(eventId);
+//                                        mqttListener.respondToContainerManager(responseToCM);
+//                                    } else {
+//                                        responseToCM = containerIp + ":" + dstPort;
+//                                        FlowController.readyStateEvents.put(eventId, responseToCM);
+//                                    }
+//                                }
+//                            }
+
                         }
                     }
                 } else if (eth.getEtherType() == EthType.ARP) {
                     ARP arp = (ARP) eth.getPayload();
                     boolean gratuitous = arp.isGratuitous();
-
 
                 }
 

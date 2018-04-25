@@ -34,7 +34,7 @@ public class MqttListener implements MqttCallback {
             try {
                 String clientId = MqttClient.generateClientId();
                 mqttClient = new MqttClient(FlowControllerConstants.MQTT_BROKER_URI, clientId, new MemoryPersistence());
-                mqttClient.setCallback(this);
+                mqttClient.setCallback();
             } catch (MqttException e) {
                 e.printStackTrace();
             }
@@ -141,6 +141,9 @@ public class MqttListener implements MqttCallback {
 //                        cusContainer.setBorderContainer(true);
 //                    }
                     containerList.put(ip, cusContainer);
+                    synchronized (FlowController.LOCK) {
+                        FlowController.ipToEventIdMap.put(ip, eventId);
+                    }
 //                    index++;
                 }
                 FlowController.containerMap.put(customer, containerList);
@@ -158,11 +161,18 @@ public class MqttListener implements MqttCallback {
             status = false;
             e.printStackTrace();
         }
-        respondToContainerManager(eventId, status);
+
+        String responseToCM = String.format(FlowControllerConstants.RESPONSE_MSG_FORMAT, eventId, status);
+        synchronized (FlowController.LOCK) {
+            if (FlowController.readyStateEvents.contains(eventId)) {
+                respondToContainerManager(responseToCM);
+            } else {
+                FlowController.readyStateEvents.put(eventId, responseToCM);
+            }
+        }
     }
 
-    private void respondToContainerManager(String eventId, boolean status) {
-        String responseToCM = String.format(FlowControllerConstants.RESPONSE_MSG_FORMAT, eventId, status);
+    void respondToContainerManager(String responseToCM) {
         try {
             MqttConnectOptions options = new MqttConnectOptions();
             options.setMqttVersion(MqttConnectOptions.MQTT_VERSION_3_1);
