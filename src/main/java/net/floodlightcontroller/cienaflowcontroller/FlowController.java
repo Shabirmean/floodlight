@@ -119,10 +119,10 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
                     IPv4Address dstIp = ipv4.getDestinationAddress();
                     IPv4Address srcIp = ipv4.getSourceAddress();
 
-                    System.out.println("########### IPAddress [Destination] : " + dstIp);
-                    System.out.println("########### IPAddress [Source] : " + srcIp);
-
                     if (!srcIp.toString().equals(SWITCH_IP)) {
+                        System.out.println("########### IPAddress [Destination] : " + dstIp);
+                        System.out.println("########### IPAddress [Source] : " + srcIp);
+
                         if (ipv4.getProtocol() == IpProtocol.TCP) {
                             TCP tcp = (TCP) ipv4.getPayload();
 
@@ -140,8 +140,8 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
 
                             System.out.println("########### UDP Port [Source Port] : " + srcPort);
                             System.out.println("########### UDP Port [Destination Port] : " + dstPort);
-                            System.out.println(">>>>>>>>>>>>>>>> " + srcPort + ":" + dstPort);
-//                            notifyContainerReadyState();
+                            System.out.println(">>>>>>>>>>>>>>>> " + srcIp + ":" + dstPort);
+//                            notifyContainerReadyState(srcIp + ":" + dstPort);
                         }
                     }
                 } else if (eth.getEtherType() == EthType.ARP) {
