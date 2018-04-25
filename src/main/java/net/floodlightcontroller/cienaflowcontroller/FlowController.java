@@ -141,7 +141,7 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
                             System.out.println("########### UDP Port [Source Port] : " + srcPort);
                             System.out.println("########### UDP Port [Destination Port] : " + dstPort);
                             System.out.println(">>>>>>>>>>>>>>>> " + srcIp + ":" + dstPort);
-//                            notifyContainerReadyState(srcIp + ":" + dstPort);
+                            notifyContainerReadyState(srcIp + ":" + dstPort);
                         }
                     }
                 } else if (eth.getEtherType() == EthType.ARP) {
@@ -349,22 +349,21 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
         return Command.CONTINUE;
     }
 
-//    private void notifyContainerReadyState(String readyContainerIp){
+    private void notifyContainerReadyState(String readyContainerIp){
 //        String responseToCM = String.format(FlowControllerConstants.RESPONSE_MSG_FORMAT, eventId, status);
-//        try {
-//            MqttConnectOptions options = new MqttConnectOptions();
-//            options.setMqttVersion(MqttConnectOptions.MQTT_VERSION_3_1);
-//            String clientId = MqttClient.generateClientId();
-//            MqttClient mqttPublisherClient =
-//                    new MqttClient(FlowControllerConstants.MQTT_BROKER_URI, clientId, new MemoryPersistence());
-//            mqttPublisherClient.connect(options);
-//            String topic = FlowControllerConstants.MQTT_PUBLISH_TOPIC;
-//            mqttPublisherClient.publish(topic, responseToCM.getBytes(UTF_8), 2, false);
-//            mqttPublisherClient.disconnect();
-//        } catch (MqttException | UnsupportedEncodingException e) {
-//            e.printStackTrace();
-//        }
-//    }
+        try {
+            MqttConnectOptions options = new MqttConnectOptions();
+            options.setMqttVersion(MqttConnectOptions.MQTT_VERSION_3_1);
+            String clientId = MqttClient.generateClientId();
+            MqttClient mqttPublisherClient =
+                    new MqttClient(FlowControllerConstants.MQTT_BROKER_URI, clientId, new MemoryPersistence());
+            mqttPublisherClient.connect(options);
+            mqttPublisherClient.publish(FlowControllerConstants.MQTT_C_READY_TOPIC, readyContainerIp.getBytes(UTF_8), 2, false);
+            mqttPublisherClient.disconnect();
+        } catch (MqttException | UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
+    }
 
 
 
