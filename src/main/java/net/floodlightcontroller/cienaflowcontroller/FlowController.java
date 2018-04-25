@@ -141,7 +141,15 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
 
                         System.out.println("########### UDP Port [Source Port] : " + srcPort);
                         System.out.println("########### UDP Port [Destination Port] : " + dstPort);
-                        System.out.println("########### UDP Payload : " + udp.getPayload());
+
+                        byte[] newArray = new byte[udp.getLength()];
+                        try {
+                            udp.getPayload().deserialize(newArray,0, udp.getLength());
+                        } catch (PacketParsingException e) {
+                            e.printStackTrace();
+                        }
+
+                        System.out.println("########### UDP Payload : " + Arrays.toString(newArray));
 
                     }
                 } else if (eth.getEtherType() == EthType.ARP) {
