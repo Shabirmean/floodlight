@@ -6,8 +6,7 @@ import net.floodlightcontroller.core.module.FloodlightModuleContext;
 import net.floodlightcontroller.core.module.FloodlightModuleException;
 import net.floodlightcontroller.core.module.IFloodlightModule;
 import net.floodlightcontroller.core.module.IFloodlightService;
-import net.floodlightcontroller.packet.Ethernet;
-import net.floodlightcontroller.packet.IPv4;
+import net.floodlightcontroller.packet.*;
 import net.floodlightcontroller.util.OFMessageUtils;
 import org.projectfloodlight.openflow.protocol.*;
 import org.projectfloodlight.openflow.protocol.action.OFAction;
@@ -99,6 +98,56 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
     //TODO:: Strictly check for OpenFLow Versions in all of the messages
     @Override
     public Command receive(IOFSwitch ovsSwitch, OFMessage msg, FloodlightContext cntx) {
+        switch (msg.getType()) {
+            case PACKET_IN:
+                Ethernet eth =
+                        IFloodlightProviderService.bcStore.get(cntx, IFloodlightProviderService.CONTEXT_PI_PAYLOAD);
+                MacAddress srcMac = eth.getSourceMACAddress();
+                VlanVid vlanId = VlanVid.ofVlan(eth.getVlanID());
+
+                System.out.println("########### Received a Packet in message");
+
+                if (eth.getEtherType() == EthType.IPv4) {
+                    IPv4 ipv4 = (IPv4) eth.getPayload();
+                    byte[] ipOptions = ipv4.getOptions();
+                    IPv4Address dstIp = ipv4.getDestinationAddress();
+                    IPv4Address srcIp = ipv4.getSourceAddress();
+
+                    System.out.println("########### IPAddress [Destination] : " + dstIp);
+                    System.out.println("########### IPAddress [Source] : " + srcIp);
+
+                    if (ipv4.getProtocol() == IpProtocol.TCP) {
+                        TCP tcp = (TCP) ipv4.getPayload();
+
+                        TransportPort srcPort = tcp.getSourcePort();
+                        TransportPort dstPort = tcp.getDestinationPort();
+                        short flags = tcp.getFlags();
+
+                        System.out.println("########### TCP Port [Source Port] : " + srcPort);
+                        System.out.println("########### TCP Port [Destination Port] : " + dstPort);
+
+                    } else if (ipv4.getProtocol() == IpProtocol.UDP) {
+                        UDP udp = (UDP) ipv4.getPayload();
+                        TransportPort srcPort = udp.getSourcePort();
+                        TransportPort dstPort = udp.getDestinationPort();
+
+                        System.out.println("########### UDP Port [Source Port] : " + srcPort);
+                        System.out.println("########### UDP Port [Destination Port] : " + dstPort);
+
+                    }
+                } else if (eth.getEtherType() == EthType.ARP) {
+                    ARP arp = (ARP) eth.getPayload();
+                    boolean gratuitous = arp.isGratuitous();
+
+
+                }
+
+                break;
+            default:
+                break;
+        }
+
+
 //        OFFactory myFactory = OFFactories.getFactory(msg.getVersion());
 //        OFActions actions = myFactory.actions();
 //        OFOxms oxms = myFactory.oxms();
