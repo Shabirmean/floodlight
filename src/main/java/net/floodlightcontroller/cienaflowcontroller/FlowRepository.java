@@ -98,7 +98,7 @@ public class FlowRepository implements MqttCallback {
                     newEvent = new CustomerEvent(eventId, customer, subnet);
                     newEvent.addCustomerContainers(containerList);
                     ArrayList<ReadyStateHolder> readyContainerList = eventsToReadyConMap.get(eventId);
-                    if (!readyContainerList.isEmpty()) {
+                    if (readyContainerList != null && !readyContainerList.isEmpty()) {
                         newEvent.updateReadyState(readyContainerList);
                     }
                     newEvent.watchAndRespondToContainerManager();
