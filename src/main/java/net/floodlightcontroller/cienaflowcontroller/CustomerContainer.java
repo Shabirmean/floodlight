@@ -20,7 +20,7 @@ public class CustomerContainer {
     private String name;
     private String ipAddress;
     private String macAddress;
-    private int pipeLineIndex;
+    private boolean isReady = false;
     private boolean borderContainer = false;
 
     public CustomerContainer(String customer, String cId, String key, String name) {
@@ -71,13 +71,13 @@ public class CustomerContainer {
         this.macAddress = macAddress;
     }
 
-//    public int getPipeLineIndex() {
-//        return pipeLineIndex;
-//    }
+    public boolean isReady() {
+        return isReady;
+    }
 
-//    public void setPipeLineIndex(int pipeLineIndex) {
-//        this.pipeLineIndex = pipeLineIndex;
-//    }
+    public void setReady(boolean ready) {
+        isReady = ready;
+    }
 
     public boolean isBorderContainer() {
         return borderContainer;

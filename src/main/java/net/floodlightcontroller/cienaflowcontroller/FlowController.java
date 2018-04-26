@@ -8,10 +8,12 @@ import net.floodlightcontroller.core.module.IFloodlightModule;
 import net.floodlightcontroller.core.module.IFloodlightService;
 import net.floodlightcontroller.packet.*;
 import net.floodlightcontroller.util.OFMessageUtils;
-import org.eclipse.paho.client.mqttv3.MqttClient;
-import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
-import org.eclipse.paho.client.mqttv3.MqttException;
+import org.eclipse.paho.client.mqttv3.*;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 import org.projectfloodlight.openflow.protocol.*;
 import org.projectfloodlight.openflow.protocol.action.OFAction;
 import org.projectfloodlight.openflow.protocol.action.OFActionOutput;
@@ -27,6 +29,7 @@ import org.projectfloodlight.openflow.types.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.io.UnsupportedEncodingException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -44,14 +47,14 @@ import static org.apache.commons.codec.CharEncoding.UTF_8;
 public class FlowController implements IOFMessageListener, IFloodlightModule {
     protected static Logger logger;
     protected IFloodlightProviderService floodlightProvider;
-    static ConcurrentHashMap<String, String> subnetToCustomerMap = new ConcurrentHashMap<>();
-    static ConcurrentHashMap<String, HashMap<String, CustomerContainer>> containerMap = new ConcurrentHashMap<>();
-    static ConcurrentHashMap<String, ArrayList<String>> customerEventIdMap = new ConcurrentHashMap<>();
-    static ConcurrentHashMap<String, String> ipToEventIdMap = new ConcurrentHashMap<>();
-    static ConcurrentHashMap<String, String> readyStateEvents = new ConcurrentHashMap<>();
 
-    static final Object LOCK = new Object();
-    private static MqttListener mqttListener;
+    private MqttListener mqttListener;
+    private FlowRepository cienaFlowRepository;
+
+    private static final int EVENT_ID_INDEX = 0;
+    private static final int CUSTOMER_INDEX = 1;
+    private static final int HOSTNAME_INDEX = 2;
+
     private static final int ADJACENT_CONTAINERS = 2;
     private static final int LEFT_CONTAINER_INDX = 0;
     private static final int RIGHT_CONTAINER_INDX = 1;
@@ -75,8 +78,9 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
     public void init(FloodlightModuleContext context) throws FloodlightModuleException {
         logger = LoggerFactory.getLogger(FlowController.class);
         this.floodlightProvider = context.getServiceImpl(IFloodlightProviderService.class);
-        mqttListener = new MqttListener();
-        mqttListener.init();
+        this.cienaFlowRepository = new FlowRepository();
+        this.mqttListener = new MqttListener(MQTT_BROKER_URI, MQTT_SUBSCRIBE_TOPIC);
+        this.mqttListener.init(cienaFlowRepository);
     }
 
     @Override
@@ -109,77 +113,44 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
     //TODO:: Strictly check for OpenFLow Versions in all of the messages
     @Override
     public Command receive(IOFSwitch ovsSwitch, OFMessage msg, FloodlightContext cntx) {
-        switch (msg.getType()) {
-            case PACKET_IN:
-                Ethernet eth =
-                        IFloodlightProviderService.bcStore.get(cntx, IFloodlightProviderService.CONTEXT_PI_PAYLOAD);
-                MacAddress srcMac = eth.getSourceMACAddress();
-                VlanVid vlanId = VlanVid.ofVlan(eth.getVlanID());
+        Ethernet eth = IFloodlightProviderService.bcStore.get(cntx, IFloodlightProviderService.CONTEXT_PI_PAYLOAD);
+        System.out.println("########### Received a Packet in message");
+        if (eth.getEtherType() == EthType.IPv4) {
+            IPv4 ipv4 = (IPv4) eth.getPayload();
+            IPv4Address dstIp = ipv4.getDestinationAddress();
+            IPv4Address srcIp = ipv4.getSourceAddress();
 
-                System.out.println("########### Received a Packet in message");
+            if (!srcIp.toString().equals(SWITCH_IP)) {
+                System.out.println("########### IPAddress [Destination] : " + dstIp);
+                System.out.println("########### IPAddress [Source] : " + srcIp);
 
-                if (eth.getEtherType() == EthType.IPv4) {
-                    IPv4 ipv4 = (IPv4) eth.getPayload();
-                    byte[] ipOptions = ipv4.getOptions();
-                    IPv4Address dstIp = ipv4.getDestinationAddress();
-                    IPv4Address srcIp = ipv4.getSourceAddress();
+                if (ipv4.getProtocol() == IpProtocol.UDP) {
+                    UDP udp = (UDP) ipv4.getPayload();
+                    TransportPort srcPort = udp.getSourcePort();
+                    TransportPort dstPort = udp.getDestinationPort();
 
-                    if (!srcIp.toString().equals(SWITCH_IP)) {
-                        System.out.println("########### IPAddress [Destination] : " + dstIp);
-                        System.out.println("########### IPAddress [Source] : " + srcIp);
+                    System.out.println("########### UDP Port [Source Port] : " + srcPort);
+                    System.out.println("########### UDP Port [Destination Port] : " + dstPort);
+                    System.out.println(">>>>>>>>>>>>>>>> " + srcIp + ":" + dstPort);
 
-                        if (ipv4.getProtocol() == IpProtocol.TCP) {
-                            TCP tcp = (TCP) ipv4.getPayload();
+                    // "<EVENT_ID>:<CUSTOMER>:<HOSTNAME>:<IP_ADDRESS>:READY"
+                    // "<EVENT_ID>:<CUSTOMER>:<HOSTNAME>:READY"
+                    Data udpData = (Data) udp.getPayload();
+                    byte[] udpDataBytes = udpData.getData();
+                    String udpDataString = new String(udpDataBytes);
+                    System.out.println("########>>>>>>> " + udpDataString);
 
-                            TransportPort srcPort = tcp.getSourcePort();
-                            TransportPort dstPort = tcp.getDestinationPort();
-                            short flags = tcp.getFlags();
-
-                            System.out.println("########### TCP Port [Source Port] : " + srcPort);
-                            System.out.println("########### TCP Port [Destination Port] : " + dstPort);
-
-                        } else if (ipv4.getProtocol() == IpProtocol.UDP) {
-                            UDP udp = (UDP) ipv4.getPayload();
-                            TransportPort srcPort = udp.getSourcePort();
-                            TransportPort dstPort = udp.getDestinationPort();
-
-                            System.out.println("########### UDP Port [Source Port] : " + srcPort);
-                            System.out.println("########### UDP Port [Destination Port] : " + dstPort);
-                            System.out.println(">>>>>>>>>>>>>>>> " + srcIp + ":" + dstPort);
-
-                            Data udpData = (Data) udp.getPayload();
-                            byte[] udpDataBytes = udpData.getData();
-                            System.out.println("########>>>>>>> " + new String(udpDataBytes));
-
-
-
-//
-//                            String containerIp = srcIp.toString();
-//                            synchronized (FlowController.LOCK) {
-//                                String eventId = ipToEventIdMap.get(containerIp);
-//                                String responseToCM;
-//                                if (eventId != null) {
-//                                    if (FlowController.readyStateEvents.contains(eventId)) {
-//                                        responseToCM = FlowController.readyStateEvents.get(eventId);
-//                                        mqttListener.respondToContainerManager(responseToCM);
-//                                    } else {
-//                                        responseToCM = containerIp + ":" + dstPort;
-//                                        FlowController.readyStateEvents.put(eventId, responseToCM);
-//                                    }
-//                                }
-//                            }
-
-                        }
+                    if (udpDataString.contains(CONTAINER_READY)) {
+                        String[] stringElements = udpDataString.split(COLON);
+                        String eventId = stringElements[EVENT_ID_INDEX];
+                        String customer = stringElements[CUSTOMER_INDEX];
+                        String hostname = stringElements[HOSTNAME_INDEX];
+                        String containerIp = srcIp.toString();
+                        ReadyStateHolder readyCon = new ReadyStateHolder(eventId, customer, hostname, containerIp);
+                        cienaFlowRepository.addReadyStateContainer(readyCon);
                     }
-                } else if (eth.getEtherType() == EthType.ARP) {
-                    ARP arp = (ARP) eth.getPayload();
-                    boolean gratuitous = arp.isGratuitous();
-
                 }
-
-                break;
-            default:
-                break;
+            }
         }
 
 
@@ -375,39 +346,21 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
         return Command.CONTINUE;
     }
 
-    private void notifyContainerReadyState(String readyContainerIp){
-//        String responseToCM = String.format(FlowControllerConstants.RESPONSE_MSG_FORMAT, eventId, status);
-        try {
-            MqttConnectOptions options = new MqttConnectOptions();
-            options.setMqttVersion(MqttConnectOptions.MQTT_VERSION_3_1);
-            String clientId = MqttClient.generateClientId();
-            MqttClient mqttPublisherClient =
-                    new MqttClient(FlowControllerConstants.MQTT_BROKER_URI, clientId, new MemoryPersistence());
-            mqttPublisherClient.connect(options);
-            mqttPublisherClient.publish(FlowControllerConstants.MQTT_C_READY_TOPIC, readyContainerIp.getBytes(UTF_8), 2, false);
-            mqttPublisherClient.disconnect();
-        } catch (MqttException | UnsupportedEncodingException e) {
-            e.printStackTrace();
-        }
-    }
 
-
-
-
-    private String getCustomerFromSubnet(IPv4Address srcIp) throws FlowControllerException {
-        String[] ipStringArr = srcIp.toString().split("\\" + PERIOD);
-        StringBuilder subnetString = new StringBuilder();
-        for (int i = 0; i < 3; i++) {
-            subnetString.append(ipStringArr[i]).append(PERIOD);
-        }
-        subnetString.append(ZERO);
-        String customer = subnetToCustomerMap.get(subnetString.toString());
-        if (customer == null) {
-            throw new FlowControllerException("Invalid subnet [" + subnetString + "]. " +
-                    "No customer found with matching subnet for IP: " + srcIp);
-        }
-        return customer;
-    }
+//    private String getCustomerFromSubnet(IPv4Address srcIp) throws FlowControllerException {
+//        String[] ipStringArr = srcIp.toString().split("\\" + PERIOD);
+//        StringBuilder subnetString = new StringBuilder();
+//        for (int i = 0; i < 3; i++) {
+//            subnetString.append(ipStringArr[i]).append(PERIOD);
+//        }
+//        subnetString.append(ZERO);
+//        String customer = subnetToCustomerMap.get(subnetString.toString());
+//        if (customer == null) {
+//            throw new FlowControllerException("Invalid subnet [" + subnetString + "]. " +
+//                    "No customer found with matching subnet for IP: " + srcIp);
+//        }
+//        return customer;
+//    }
 
 //    private CustomerContainer[] getAdjacentContainers(CustomerContainer srcContainer,
 //                                                      HashMap<String, CustomerContainer> containerList) {
