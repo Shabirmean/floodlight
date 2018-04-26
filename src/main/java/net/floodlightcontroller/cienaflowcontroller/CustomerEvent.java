@@ -46,7 +46,11 @@ public class CustomerEvent {
         for (CustomerContainer cusContainer : customerContainers) {
             addCustomerContainer(cusContainer);
             String hashKey = String.format(CONTAINER_HASH_KEY, cusContainer.getIpAddress(), cusContainer.getName());
-            readyContainerMap.put(hashKey, false);
+            if (cusContainer.isBorderContainer()) {
+                readyContainerMap.put(hashKey, true);
+            } else {
+                readyContainerMap.put(hashKey, false);
+            }
         }
     }
 
