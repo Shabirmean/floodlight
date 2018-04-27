@@ -83,6 +83,7 @@ public class CustomerEvent {
                 if (areAllReady(containerStates)) {
                     logger.info("+++++++++++ ALL ARE READY +++++++++++++");
                     eventState = STATE.ACTIVE;
+                    respondToContainerManager(String.format(RESPONSE_MSG_FORMAT, eventId, setupStatus));
                 }
             }
         }
