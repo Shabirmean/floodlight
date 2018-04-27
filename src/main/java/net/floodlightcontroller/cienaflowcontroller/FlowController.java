@@ -114,33 +114,26 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
     @Override
     public Command receive(IOFSwitch ovsSwitch, OFMessage msg, FloodlightContext cntx) {
         Ethernet eth = IFloodlightProviderService.bcStore.get(cntx, IFloodlightProviderService.CONTEXT_PI_PAYLOAD);
-        System.out.println("########### Received a Packet in message");
         if (eth.getEtherType() == EthType.IPv4) {
             IPv4 ipv4 = (IPv4) eth.getPayload();
             IPv4Address dstIp = ipv4.getDestinationAddress();
             IPv4Address srcIp = ipv4.getSourceAddress();
 
             if (!srcIp.toString().equals(SWITCH_IP)) {
-                System.out.println("########### IPAddress [Destination] : " + dstIp);
-                System.out.println("########### IPAddress [Source] : " + srcIp);
 
                 if (ipv4.getProtocol() == IpProtocol.UDP) {
                     UDP udp = (UDP) ipv4.getPayload();
                     TransportPort srcPort = udp.getSourcePort();
                     TransportPort dstPort = udp.getDestinationPort();
 
-                    System.out.println("########### UDP Port [Source Port] : " + srcPort);
-                    System.out.println("########### UDP Port [Destination Port] : " + dstPort);
-                    System.out.println(">>>>>>>>>>>>>>>> " + srcIp + ":" + dstPort);
-
                     // "<EVENT_ID>:<CUSTOMER>:<HOSTNAME>:<IP_ADDRESS>:READY"
                     // "<EVENT_ID>:<CUSTOMER>:<HOSTNAME>:READY"
                     Data udpData = (Data) udp.getPayload();
                     byte[] udpDataBytes = udpData.getData();
                     String udpDataString = new String(udpDataBytes);
-                    System.out.println("########>>>>>>> " + udpDataString);
 
                     if (udpDataString.contains(CONTAINER_READY)) {
+                        System.out.println("########>>>>>>> " + udpDataString);
                         String[] stringElements = udpDataString.split(COLON);
                         String eventId = stringElements[EVENT_ID_INDEX];
                         String customer = stringElements[CUSTOMER_INDEX];

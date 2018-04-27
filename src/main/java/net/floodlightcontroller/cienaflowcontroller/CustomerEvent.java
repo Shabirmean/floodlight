@@ -59,7 +59,6 @@ public class CustomerEvent {
     }
 
     private void addCustomerContainer(CustomerContainer newContainer) {
-        logger.info("Adding Keys: [" + newContainer.getIpAddress() + "] - [" + newContainer.getName() + "]");
         ipToContainerMap.put(newContainer.getIpAddress(), newContainer);
         cnameToContainerMap.put(newContainer.getName(), newContainer);
     }
@@ -73,16 +72,14 @@ public class CustomerEvent {
     }
 
     void updateReadyState(String ipAddress, String containerName) {
-        logger.info("************** >>> " + containerName + " - " + ipAddress);
         synchronized (readyContainerMap) {
-            logger.info("Checking for: [" + ipAddress + "] - [" +containerName + "]");
             if (ipToContainerMap.containsKey(ipAddress) && cnameToContainerMap.containsKey(containerName)) {
                 String hashKey = String.format(CONTAINER_HASH_KEY, ipAddress, containerName);
                 readyContainerMap.put(hashKey, true);
                 Collection<Boolean> containerStates = readyContainerMap.values();
                 if (areAllReady(containerStates)) {
                     logger.info("+++++++++++ ALL ARE READY +++++++++++++");
-                    eventState = STATE.ACTIVE;
+//                    eventState = STATE.ACTIVE;
                     respondToContainerManager(String.format(RESPONSE_MSG_FORMAT, eventId, setupStatus));
                 }
             }
@@ -100,7 +97,6 @@ public class CustomerEvent {
             while (true) {
 //                logger.info("... checking");
                 if (eventState == STATE.ACTIVE) {
-                    logger.info("#### GOT IN HERE: ");
                     respondToContainerManager(String.format(RESPONSE_MSG_FORMAT, eventId, setupStatus));
                     return;
                 }
@@ -112,7 +108,6 @@ public class CustomerEvent {
 
     private void respondToContainerManager(String responseToCM) {
         try {
-            logger.info("#### RESPONDING WITH:: " + responseToCM);
             MqttConnectOptions options = new MqttConnectOptions();
             options.setMqttVersion(MqttConnectOptions.MQTT_VERSION_3_1);
             String clientId = MqttClient.generateClientId();
