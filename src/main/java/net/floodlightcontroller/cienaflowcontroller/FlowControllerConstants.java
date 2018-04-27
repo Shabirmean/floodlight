@@ -22,7 +22,7 @@ class FlowControllerConstants {
     static final String CONTAINER_READY = "READY";
     static final String MQTT_BROKER_URI = "tcp://localhost:1883";
     static final String MQTT_SUBSCRIBE_TOPIC = CIENA + SEP + CMANAGER_FMANAGER + SEP + REQUEST + SEP + "+";
-    static final String MQTT_PUBLISH_TOPIC = CIENA + SEP + FMANAGER_CMANAGER + SEP + RESPONSE;
+    static final String MQTT_PUBLISH_TOPIC = CIENA + SEP + "cmanager" + SEP + FMANAGER_CMANAGER + SEP + RESPONSE;
     static final String RESPONSE_MSG_FORMAT = "{\"eventId\":\"%s\",\"status\":\"%s\"}";
 
     static final String JSON_ATTRIB_CUSTOMER = "customer";
