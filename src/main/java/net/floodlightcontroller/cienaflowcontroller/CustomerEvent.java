@@ -32,7 +32,8 @@ public class CustomerEvent {
     private STATE eventState;                     // To check if the flow is running or has completed running
     private boolean setupStatus = true;          // This indicates whether the setup was clean for the flow to happen
     private ConcurrentHashMap<String, CustomerContainer> ipToContainerMap;
-    private ConcurrentHashMap<String, CustomerContainer> cnameToContainerMap; //containerName is same as hostname
+    private ConcurrentHashMap<String, CustomerContainer> cnameToContainerMap;
+    //containerName is same as customer_hostname
     private final HashMap<String, Boolean> readyContainerMap;
 
     CustomerEvent(String eventId, String customer, String subnet) {
@@ -58,7 +59,7 @@ public class CustomerEvent {
     }
 
     private void addCustomerContainer(CustomerContainer newContainer) {
-        logger.info("Adding Keys: [" + newContainer.getIpAddress() + " ] - [" + newContainer.getName() + "]");
+        logger.info("Adding Keys: [" + newContainer.getIpAddress() + "] - [" + newContainer.getName() + "]");
         ipToContainerMap.put(newContainer.getIpAddress(), newContainer);
         cnameToContainerMap.put(newContainer.getName(), newContainer);
     }
@@ -71,12 +72,12 @@ public class CustomerEvent {
         }
     }
 
-    void updateReadyState(String ipAddress, String hostname) {
-        logger.info("************** >>> " + hostname + " - " + ipAddress);
+    void updateReadyState(String ipAddress, String containerName) {
+        logger.info("************** >>> " + containerName + " - " + ipAddress);
         synchronized (readyContainerMap) {
-            logger.info("Checking for: [" + ipAddress + " ] - [" +hostname + "]");
-            if (ipToContainerMap.containsKey(ipAddress) && cnameToContainerMap.containsKey(hostname)) {
-                String hashKey = String.format(CONTAINER_HASH_KEY, ipAddress, hostname);
+            logger.info("Checking for: [" + ipAddress + "] - [" +containerName + "]");
+            if (ipToContainerMap.containsKey(ipAddress) && cnameToContainerMap.containsKey(containerName)) {
+                String hashKey = String.format(CONTAINER_HASH_KEY, ipAddress, containerName);
                 readyContainerMap.put(hashKey, true);
                 Collection<Boolean> containerStates = readyContainerMap.values();
                 if (areAllReady(containerStates)) {
