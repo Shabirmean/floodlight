@@ -105,7 +105,7 @@ public class CustomerEvent {
                 }
             }
         });
-        eventStatusWatcher.setDaemon(true);
+//        eventStatusWatcher.setDaemon(true);
         eventStatusWatcher.start();
     }
 
