@@ -58,6 +58,7 @@ public class CustomerEvent {
     }
 
     private void addCustomerContainer(CustomerContainer newContainer) {
+        logger.info("Adding Keys: [" + newContainer.getIpAddress() + " ] - [" + newContainer.getName() + "]");
         ipToContainerMap.put(newContainer.getIpAddress(), newContainer);
         cnameToContainerMap.put(newContainer.getName(), newContainer);
     }
@@ -73,6 +74,7 @@ public class CustomerEvent {
     void updateReadyState(String ipAddress, String hostname) {
         logger.info("************** >>> " + hostname + " - " + ipAddress);
         synchronized (readyContainerMap) {
+            logger.info("Checking for: [" + ipAddress + " ] - [" +hostname + "]");
             if (ipToContainerMap.containsKey(ipAddress) && cnameToContainerMap.containsKey(hostname)) {
                 String hashKey = String.format(CONTAINER_HASH_KEY, ipAddress, hostname);
                 readyContainerMap.put(hashKey, true);
