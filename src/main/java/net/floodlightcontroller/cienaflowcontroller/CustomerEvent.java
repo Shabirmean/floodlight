@@ -97,7 +97,6 @@ public class CustomerEvent {
     void watchAndRespondToContainerManager() {
         Thread eventStatusWatcher = new Thread(() -> {
             while (true) {
-                logger.info("#### LOOOOOPINGNGNGN: ");
                 if (eventState == STATE.ACTIVE) {
                     logger.info("#### GOT IN HERE: ");
                     respondToContainerManager(String.format(RESPONSE_MSG_FORMAT, eventId, setupStatus));
