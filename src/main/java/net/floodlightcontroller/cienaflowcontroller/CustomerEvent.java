@@ -109,6 +109,7 @@ public class CustomerEvent {
 
     private void respondToContainerManager(String responseToCM) {
         try {
+            logger.info("#### RESPONDING WITH:: " + responseToCM);
             MqttConnectOptions options = new MqttConnectOptions();
             options.setMqttVersion(MqttConnectOptions.MQTT_VERSION_3_1);
             String clientId = MqttClient.generateClientId();
