@@ -4,6 +4,8 @@ import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
@@ -20,6 +22,7 @@ import static org.apache.commons.codec.CharEncoding.UTF_8;
  * Created by shabirmean on 2018-04-25 with some hope.
  */
 public class CustomerEvent {
+    private static Logger logger = LoggerFactory.getLogger(CustomerEvent.class);;
     private static final String CONTAINER_HASH_KEY = "%s:%s";
 
     private String eventId;
@@ -68,12 +71,14 @@ public class CustomerEvent {
     }
 
     void updateReadyState(String ipAddress, String hostname) {
+        logger.info("************** >>> " + hostname + " - " + ipAddress);
         synchronized (readyContainerMap) {
             if (ipToContainerMap.containsKey(ipAddress) && cnameToContainerMap.containsKey(hostname)) {
                 String hashKey = String.format(CONTAINER_HASH_KEY, ipAddress, hostname);
                 readyContainerMap.put(hashKey, true);
                 Collection<Boolean> containerStates = readyContainerMap.values();
                 if (areAllReady(containerStates)) {
+                    logger.info("+++++++++++ ALL ARE READY +++++++++++++");
                     eventState = STATE.ACTIVE;
                 }
             }

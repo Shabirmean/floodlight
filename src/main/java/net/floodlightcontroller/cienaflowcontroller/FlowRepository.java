@@ -118,10 +118,12 @@ public class FlowRepository implements MqttCallback {
             String eventId = readyContainer.getEventId();
             CustomerEvent anEvent = eventIdToEventsMap.get(eventId);
             if (anEvent != null) {
+                logger.info("@@@@@@@@@@@@@ > " + readyContainer.getHostname() + " - " + readyContainer.getIpAddress());
                 if (anEvent.getCustomer().equals(readyContainer.getCustomer().toUpperCase())) {
                     anEvent.updateReadyState(readyContainer.getIpAddress(), readyContainer.getHostname());
                 }
             } else {
+                logger.info("$$$$$$$$$$$$$ > " + readyContainer.getHostname() + " - " + readyContainer.getIpAddress());
                 ArrayList<ReadyStateHolder> readyContainerList = eventsToReadyConMap.get(eventId);
                 if (readyContainerList == null) {
                     readyContainerList = new ArrayList<>();
