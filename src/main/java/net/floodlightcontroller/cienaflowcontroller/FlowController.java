@@ -142,13 +142,16 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
                 dstMac = eth.getDestinationMACAddress();
                 srcIp = ipv4.getSourceAddress();
                 dstIp = ipv4.getDestinationAddress();
-                logger.info("################ SOURCE: {} seen with IP: {}", srcMac, srcIp);
-                logger.info("################ DESTINATION: {} seen with IP: {}", dstMac, dstIp);
-                logger.info("----------------------------------------------------------------");
+
 
 
                 //MUST CHECK THIS
                 if (ipv4.getProtocol() == IpProtocol.UDP && !srcIp.toString().equals(SWITCH_IP)) {
+
+                    logger.info("################ SOURCE: {} seen with IP: {}", srcMac, srcIp);
+                    logger.info("################ DESTINATION: {} seen with IP: {}", dstMac, dstIp);
+                    logger.info("----------------------------------------------------------------");
+
                     // "<EVENT_ID>:<CUSTOMER>:<HOSTNAME>:<IP_ADDRESS>:READY"
                     // "<EVENT_ID>:<CUSTOMER>:<HOSTNAME>:READY"
                     UDP udp = (UDP) ipv4.getPayload();
