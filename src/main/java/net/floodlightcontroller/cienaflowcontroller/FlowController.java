@@ -129,11 +129,11 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
         MacAddress dstMac;
         IPv4Address srcIp;
         IPv4Address dstIp;
-        logger.info("########## OVS-SWITCH SOCKET ADD: " + ovsSocketAddress);
-        logger.info("########## OVS-SWITCH INET ADDR: " + inetAddr);
-        logger.info("########## OVS-SWITCH IPv4 ADDR: " + ovsIpv4);
-        logger.info("########## TABLE-ID: " + ofPort);
-        logger.info("########## SWITCH-MAC: " + switchMac.toString());
+//        logger.info("########## OVS-SWITCH SOCKET ADD: " + ovsSocketAddress);
+//        logger.info("########## OVS-SWITCH INET ADDR: " + inetAddr);
+//        logger.info("########## OVS-SWITCH IPv4 ADDR: " + ovsIpv4);
+//        logger.info("########## TABLE-ID: " + ofPort);
+//        logger.info("########## SWITCH-MAC: " + switchMac.toString());
 
         try {
             if (eth.getEtherType() == EthType.IPv4) {
@@ -142,15 +142,20 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
                 dstMac = eth.getDestinationMACAddress();
                 srcIp = ipv4.getSourceAddress();
                 dstIp = ipv4.getDestinationAddress();
-
+//                logger.info("################ SOURCE: {} seen with IP: {}", srcMac, srcIp);
+//                logger.info("################ DESTINATION: {} seen with IP: {}", dstMac, dstIp);
+//                logger.info("----------------------------------------------------------------");
 
 
                 //MUST CHECK THIS
                 if (ipv4.getProtocol() == IpProtocol.UDP && !srcIp.toString().equals(SWITCH_IP)) {
 
-                    logger.info("################ SOURCE: {} seen with IP: {}", srcMac, srcIp);
-                    logger.info("################ DESTINATION: {} seen with IP: {}", dstMac, dstIp);
-                    logger.info("----------------------------------------------------------------");
+                    logger.info("########## OVS-SWITCH SOCKET ADD: " + ovsSocketAddress);
+                    logger.info("########## OVS-SWITCH INET ADDR: " + inetAddr);
+                    logger.info("########## OVS-SWITCH IPv4 ADDR: " + ovsIpv4);
+                    logger.info("########## TABLE-ID: " + ofPort);
+                    logger.info("########## SWITCH-MAC: " + switchMac.toString());
+
 
                     // "<EVENT_ID>:<CUSTOMER>:<HOSTNAME>:<IP_ADDRESS>:READY"
                     // "<EVENT_ID>:<CUSTOMER>:<HOSTNAME>:READY"
