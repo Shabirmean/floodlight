@@ -156,6 +156,10 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
                     logger.info("########## TABLE-ID: " + ofPort);
                     logger.info("########## SWITCH-MAC: " + switchMac.toString());
 
+                    logger.info("################ SOURCE: {} seen with IP: {}", srcMac, srcIp);
+                    logger.info("################ DESTINATION: {} seen with IP: {}", dstMac, dstIp);
+                    logger.info("----------------------------------------------------------------");
+
 
                     // "<EVENT_ID>:<CUSTOMER>:<HOSTNAME>:<IP_ADDRESS>:READY"
                     // "<EVENT_ID>:<CUSTOMER>:<HOSTNAME>:READY"
