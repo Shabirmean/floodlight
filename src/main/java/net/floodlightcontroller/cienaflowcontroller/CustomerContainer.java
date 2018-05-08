@@ -12,7 +12,8 @@ public class CustomerContainer {
                     "\"name\":\"%s\"," +
                     "\"ip\":\"%s\"," +
                     "\"mac\":\"%s\"," +
-                    "\"isIngress\":\"%s\"" +
+                    "\"isIngress\":\"%s\"," +
+                    "\"allowedFlows\":\"%s\"" +
                     "}";
     private String customer;
     private String cId;
@@ -20,17 +21,13 @@ public class CustomerContainer {
     private String name;
     private String ipAddress;
     private String macAddress;
+    private String allowedFlows;
+    private String eventId;
     private boolean isReady = false;
     private boolean borderContainer = false;
 
-    public CustomerContainer(String customer, String cId, String key, String name) {
-        this.customer = customer;
-        this.cId = cId;
-        this.key = key;
-        this.name = name;
-    }
-
-    public CustomerContainer(String customer, String cId, String key, String name, String ip, String mac) {
+    CustomerContainer(
+            String customer, String cId, String key, String name, String ip, String mac) {
         this.customer = customer;
         this.cId = cId;
         this.key = key;
@@ -40,7 +37,8 @@ public class CustomerContainer {
     }
 
     public String getJSONString() {
-        return String.format(CONTNR_STRING_FORMAT, key, cId, name, ipAddress, macAddress, borderContainer);
+        return String.format(
+                CONTNR_STRING_FORMAT, key, cId, name, ipAddress, macAddress, borderContainer, allowedFlows);
     }
 
     public String getCustomer() {
@@ -79,11 +77,31 @@ public class CustomerContainer {
         isReady = ready;
     }
 
+    public String getAllowedFlows() {
+        return allowedFlows;
+    }
+
+    public void setAllowedFlows(String allowedFlows) {
+        this.allowedFlows = allowedFlows;
+    }
+
+    public String getEventId() {
+        return eventId;
+    }
+
+    public void setEventId(String eventId) {
+        this.eventId = eventId;
+    }
+
     public boolean isBorderContainer() {
         return borderContainer;
     }
 
     public void setBorderContainer(boolean borderContainer) {
         this.borderContainer = borderContainer;
+    }
+
+    public String getKey() {
+        return key;
     }
 }

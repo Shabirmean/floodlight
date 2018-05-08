@@ -33,6 +33,7 @@ public class CustomerEvent {
     private boolean setupStatus = true;          // This indicates whether the setup was clean for the flow to happen
     private ConcurrentHashMap<String, CustomerContainer> ipToContainerMap;
     private ConcurrentHashMap<String, CustomerContainer> cnameToContainerMap;
+    private ConcurrentHashMap<String, CustomerContainer> idxToContainerMap;
     //containerName is same as customer_hostname
     private final HashMap<String, Boolean> readyContainerMap;
 
@@ -61,6 +62,7 @@ public class CustomerEvent {
     private void addCustomerContainer(CustomerContainer newContainer) {
         ipToContainerMap.put(newContainer.getIpAddress(), newContainer);
         cnameToContainerMap.put(newContainer.getName(), newContainer);
+        idxToContainerMap.put(newContainer.getKey(), newContainer);
     }
 
     void updateReadyState(ArrayList<ReadyStateHolder> readyContainerList) {
@@ -85,6 +87,10 @@ public class CustomerEvent {
             }
         }
         //TODO:: If does not contain then some issue has occurred
+    }
+
+    String getIpFromIndex(String index){
+        return idxToContainerMap.get(index).getIpAddress();
     }
 
     private boolean areAllReady(Collection<Boolean> booleanCollection) {

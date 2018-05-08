@@ -7,11 +7,14 @@ import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
+import org.projectfloodlight.openflow.types.IPv4Address;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static net.floodlightcontroller.cienaflowcontroller.FlowControllerConstants.*;
@@ -25,6 +28,8 @@ public class FlowRepository implements MqttCallback {
     private ConcurrentHashMap<String, CustomerEvent> customerToEventsMap = new ConcurrentHashMap<>();
     private ConcurrentHashMap<String, CustomerEvent> subnetToEventsMap = new ConcurrentHashMap<>();
     private ConcurrentHashMap<String, ArrayList<ReadyStateHolder>> eventsToReadyConMap = new ConcurrentHashMap<>();
+    private ConcurrentHashMap<String, CustomerContainer> ipsToCustomerConMap = new ConcurrentHashMap<>();
+    private ArrayList<String> ingressContainerIps = new ArrayList<>();
 
     FlowRepository() {
         logger = LoggerFactory.getLogger(FlowRepository.class);
@@ -89,9 +94,18 @@ public class FlowRepository implements MqttCallback {
                     String ip = (String) containerObj.get(JSON_ATTRIB_IP);
                     String mac = (String) containerObj.get(JSON_ATTRIB_MAC);
                     String isIngress = (String) containerObj.get(JSON_ATTRIB_IS_INGRESS);
-                    CustomerContainer cusContainer = new CustomerContainer(customer, cId, key, cName, ip, mac);
-                    cusContainer.setBorderContainer(Boolean.parseBoolean(isIngress));
+                    String allowedFlows = (String) containerObj.get(JSON_ATTRIB_ALLOWED_FLOWS);
+                    Boolean isIngressBool = Boolean.parseBoolean(isIngress);
+                    CustomerContainer cusContainer =
+                            new CustomerContainer(customer, cId, key, cName, ip, mac);
+                    cusContainer.setBorderContainer(isIngressBool);
+                    cusContainer.setAllowedFlows(allowedFlows);
+                    cusContainer.setEventId(eventId);
                     containerList.add(cusContainer);
+                    if (isIngressBool) {
+                        ingressContainerIps.add(ip);
+                    }
+                    ipsToCustomerConMap.put(ip, cusContainer);
                 }
 
                 synchronized (eventIdToEventsMap) {
@@ -133,4 +147,44 @@ public class FlowRepository implements MqttCallback {
             }
         }
     }
+
+    boolean isIngressContainerIp(String ipAddress) {
+        return ingressContainerIps.contains(ipAddress);
+    }
+
+    boolean isNeighbourOfIngress(String ipAddress) {
+        List<String> listOfIngressNeighbours = getNeighboursOfIngress();
+        return listOfIngressNeighbours.contains(ipAddress);
+    }
+
+
+    private List<String> getNeighboursOfIngress() {
+        List<String>  listOfAllNeighbours = new ArrayList<>();
+        for (String ingressIp : ingressContainerIps) {
+            listOfAllNeighbours.addAll(getNeighbourIps(ingressIp));
+        }
+        return listOfAllNeighbours;
+    }
+
+
+    List<IPv4Address> getNeighbourIps(IPv4Address ipAddress) {
+        List<IPv4Address> adjacentIpAddresses = new ArrayList<>();
+        CustomerContainer customerContainer = ipsToCustomerConMap.get(ipAddress.toString());
+        String eventId = customerContainer.getEventId();
+        CustomerEvent customerEvent = eventIdToEventsMap.get(eventId);
+
+        List<String> neighbourIndexes = getNeighbourIps(ipAddress.toString());
+        for (String indx : neighbourIndexes) {
+            String ipAdd = customerEvent.getIpFromIndex(indx);
+            adjacentIpAddresses.add(IPv4Address.of(ipAdd));
+        }
+        return adjacentIpAddresses;
+    }
+
+    private List<String> getNeighbourIps(String ipAddress) {
+        CustomerContainer customerContainer = ipsToCustomerConMap.get(ipAddress);
+        String allowedFlows = customerContainer.getAllowedFlows();
+        return Arrays.asList(allowedFlows.split("\\s*,\\s*"));
+    }
+
 }
