@@ -6,6 +6,7 @@ import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import sun.rmi.runtime.Log;
 
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
@@ -60,6 +61,7 @@ public class CustomerEvent {
     }
 
     private void addCustomerContainer(CustomerContainer newContainer) {
+        logger.info("$$$$$$$    [" + newContainer.getIpAddress() + "]-[" + newContainer.getName() + "]  $$$$$$$$");
         ipToContainerMap.put(newContainer.getIpAddress(), newContainer);
         cnameToContainerMap.put(newContainer.getName(), newContainer);
         idxToContainerMap.put(newContainer.getKey(), newContainer);
