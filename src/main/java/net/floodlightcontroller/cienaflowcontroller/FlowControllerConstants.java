@@ -33,8 +33,8 @@ class FlowControllerConstants {
 //    static final String JSON_ATTRIB_PIPELINE = "pipeline";
     static final String JSON_ATTRIB_IS_INGRESS = "isIngress";
     static final String JSON_ATTRIB_ALLOWED_FLOWS = "allowedFlows";
-    static final String JSON_ATTRIB_KEY = "key";
-    static final String JSON_ATTRIB_ID = "cId";
+    static final String JSON_ATTRIB_INDEX = "index";
+    static final String JSON_ATTRIB_ID = "id";
     static final String JSON_ATTRIB_NAME = "name";
     static final String JSON_ATTRIB_IP = "ip";
     static final String JSON_ATTRIB_MAC = "mac";

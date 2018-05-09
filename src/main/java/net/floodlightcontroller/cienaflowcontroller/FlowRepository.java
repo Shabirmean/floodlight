@@ -89,7 +89,7 @@ public class FlowRepository implements MqttCallback {
                 for (Object container : containers) {
                     JSONObject containerObj = (JSONObject) container;
                     String cId = (String) containerObj.get(JSON_ATTRIB_ID);
-                    String key = (String) containerObj.get(JSON_ATTRIB_KEY);
+                    String index = (String) containerObj.get(JSON_ATTRIB_INDEX);
                     String cName = (String) containerObj.get(JSON_ATTRIB_NAME);
                     String ip = (String) containerObj.get(JSON_ATTRIB_IP);
                     String mac = (String) containerObj.get(JSON_ATTRIB_MAC);
@@ -97,7 +97,7 @@ public class FlowRepository implements MqttCallback {
                     String allowedFlows = (String) containerObj.get(JSON_ATTRIB_ALLOWED_FLOWS);
                     Boolean isIngressBool = Boolean.parseBoolean(isIngress);
                     CustomerContainer cusContainer =
-                            new CustomerContainer(customer, cId, key, cName, ip, mac);
+                            new CustomerContainer(customer, cId, index, cName, ip, mac);
                     cusContainer.setBorderContainer(isIngressBool);
                     cusContainer.setAllowedFlows(allowedFlows);
                     cusContainer.setEventId(eventId);

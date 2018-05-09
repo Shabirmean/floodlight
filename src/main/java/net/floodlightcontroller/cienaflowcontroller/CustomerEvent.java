@@ -65,7 +65,7 @@ public class CustomerEvent {
         logger.info("$$$$$$$    [" + newContainer.getJSONString() + "]  $$$$$$$$");
         ipToContainerMap.put(newContainer.getIpAddress(), newContainer);
         cnameToContainerMap.put(newContainer.getName(), newContainer);
-        idxToContainerMap.put(newContainer.getKey(), newContainer);
+        idxToContainerMap.put(newContainer.getIndex(), newContainer);
     }
 
     void updateReadyState(ArrayList<ReadyStateHolder> readyContainerList) {

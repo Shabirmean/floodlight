@@ -7,7 +7,7 @@ package net.floodlightcontroller.cienaflowcontroller;
 public class CustomerContainer {
     private static final String CONTNR_STRING_FORMAT =
             "{" +
-                    "\"key\":\"%s\"," +
+                    "\"index\":\"%s\"," +
                     "\"id\":\"%s\"," +
                     "\"name\":\"%s\"," +
                     "\"ip\":\"%s\"," +
@@ -17,7 +17,7 @@ public class CustomerContainer {
                     "}";
     private String customer;
     private String cId;
-    private String key;
+    private String index;
     private String name;
     private String ipAddress;
     private String macAddress;
@@ -27,10 +27,10 @@ public class CustomerContainer {
     private boolean borderContainer = false;
 
     CustomerContainer(
-            String customer, String cId, String key, String name, String ip, String mac) {
+            String customer, String cId, String index, String name, String ip, String mac) {
         this.customer = customer;
         this.cId = cId;
-        this.key = key;
+        this.index = index;
         this.name = name;
         this.ipAddress = ip;
         this.macAddress = mac;
@@ -38,7 +38,7 @@ public class CustomerContainer {
 
     public String getJSONString() {
         return String.format(
-                CONTNR_STRING_FORMAT, key, cId, name, ipAddress, macAddress, borderContainer, allowedFlows);
+                CONTNR_STRING_FORMAT, index, cId, name, ipAddress, macAddress, borderContainer, allowedFlows);
     }
 
     public String getCustomer() {
@@ -101,7 +101,7 @@ public class CustomerContainer {
         this.borderContainer = borderContainer;
     }
 
-    public String getKey() {
-        return key;
+    public String getIndex() {
+        return index;
     }
 }
