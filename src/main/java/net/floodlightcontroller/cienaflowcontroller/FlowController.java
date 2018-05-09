@@ -76,6 +76,7 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
         this.ipToTableIdMap = new ConcurrentHashMap<>();
         this.cienaFlowRepository = new FlowRepository();
         this.flowTableBits = new BitSet(MAX_TABLE_IDS);
+        this.flowTableBits.set(DEFAULT_FLOW_TABLE);
         MqttListener mqttListener = new MqttListener(MQTT_BROKER_URI, MQTT_SUBSCRIBE_TOPIC);
         mqttListener.init(cienaFlowRepository);
     }
@@ -245,6 +246,7 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
                     Integer tableId = ipToTableIdMap.get(srcIp.toString());
                     if (tableId == null) {
                         tableId = createNewTableEntryForIP(srcIp.toString());
+                        logger.info("%%%%%%%%%%% New Table Id " + tableId + " for IP " + srcIp.toString());
                     }
 
                     Match topLevelMatch = myFactory.buildMatch()
@@ -338,7 +340,7 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
 
     private int createNewTableEntryForIP(String ipAddress) {
         //TODO:: Need to remove the table Ids later
-        int nextTableId = flowTableBits.nextClearBit(0);
+        int nextTableId = flowTableBits.nextClearBit(DEFAULT_FLOW_TABLE);
         flowTableBits.set(nextTableId);
         ipToTableIdMap.put(ipAddress, nextTableId);
         return nextTableId;
