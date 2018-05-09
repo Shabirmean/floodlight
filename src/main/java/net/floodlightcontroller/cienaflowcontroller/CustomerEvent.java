@@ -45,6 +45,7 @@ public class CustomerEvent {
         this.eventState = STATE.PREPARING;
         this.ipToContainerMap = new ConcurrentHashMap<>();
         this.cnameToContainerMap = new ConcurrentHashMap<>();
+        this.idxToContainerMap = new ConcurrentHashMap<>();
         this.readyContainerMap = new HashMap<>();
     }
 
