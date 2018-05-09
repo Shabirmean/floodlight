@@ -48,19 +48,14 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
     protected static Logger logger;
     protected IFloodlightProviderService floodlightProvider;
 
-    private MqttListener mqttListener;
+    private ConcurrentHashMap<String, Integer> ipToTableIdMap;
     private FlowRepository cienaFlowRepository;
+    private BitSet flowTableBits;
 
     private static final int EVENT_ID_INDEX = 0;
     private static final int CUSTOMER_INDEX = 1;
     private static final int HOSTNAME_INDEX = 2;
-
-    private static final int ADJACENT_CONTAINERS = 2;
-    private static final int LEFT_CONTAINER_INDX = 0;
-    private static final int RIGHT_CONTAINER_INDX = 1;
-    private static final String INGRESS_IP = "192.168.0.250";
-    private static final String SWITCH_IP = "193.168.0.1";
-    private static final String SWITCH_MAC = "d6:ed:a6:a2:0c:44";
+    private static final int MAX_TABLE_IDS = 256;
 
     @Override
     public String getName() {
@@ -78,9 +73,11 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
     public void init(FloodlightModuleContext context) throws FloodlightModuleException {
         logger = LoggerFactory.getLogger(FlowController.class);
         this.floodlightProvider = context.getServiceImpl(IFloodlightProviderService.class);
+        this.ipToTableIdMap = new ConcurrentHashMap<>();
         this.cienaFlowRepository = new FlowRepository();
-        this.mqttListener = new MqttListener(MQTT_BROKER_URI, MQTT_SUBSCRIBE_TOPIC);
-        this.mqttListener.init(cienaFlowRepository);
+        this.flowTableBits = new BitSet(MAX_TABLE_IDS);
+        MqttListener mqttListener = new MqttListener(MQTT_BROKER_URI, MQTT_SUBSCRIBE_TOPIC);
+        mqttListener.init(cienaFlowRepository);
     }
 
     @Override
@@ -118,8 +115,9 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
         OFOxms oxms = myFactory.oxms();
         OFInstructions instructions = myFactory.instructions();
 
-        OFPort ofPort = OFMessageUtils.getInPort((OFPacketIn) msg);
         Ethernet eth = IFloodlightProviderService.bcStore.get(cntx, IFloodlightProviderService.CONTEXT_PI_PAYLOAD);
+        OFPort inOFPort = OFMessageUtils.getInPort((OFPacketIn) msg);
+        int inPortNumber = inOFPort.getPortNumber();
 
         SocketAddress ovsSocketAddress = ovsSwitch.getInetAddress();
         InetSocketAddress inetAddr = (InetSocketAddress) ovsSocketAddress;
@@ -129,11 +127,6 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
         MacAddress dstMac;
         IPv4Address srcIp;
         IPv4Address dstIp;
-//        logger.info("########## OVS-SWITCH SOCKET ADD: " + ovsSocketAddress);
-//        logger.info("########## OVS-SWITCH INET ADDR: " + inetAddr);
-//        logger.info("########## OVS-SWITCH IPv4 ADDR: " + ovsIpv4);
-//        logger.info("########## TABLE-ID: " + ofPort);
-//        logger.info("########## SWITCH-MAC: " + switchMac.toString());
 
         try {
             if (eth.getEtherType() == EthType.IPv4) {
@@ -146,13 +139,12 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
 //                logger.info("################ DESTINATION: {} seen with IP: {}", dstMac, dstIp);
 //                logger.info("----------------------------------------------------------------");
 
-
                 //MUST CHECK THIS
                 if (ipv4.getProtocol() == IpProtocol.UDP && srcMac != switchMac) {
                     logger.info("########## OVS-SWITCH SOCKET ADD: " + ovsSocketAddress);
                     logger.info("########## OVS-SWITCH INET ADDR: " + inetAddr);
                     logger.info("########## OVS-SWITCH IPv4 ADDR: " + ovsIpv4);
-                    logger.info("########## TABLE-ID: " + ofPort);
+                    logger.info("########## TABLE-ID: " + inOFPort);
                     logger.info("########## SWITCH-MAC: " + switchMac.toString());
 
                     logger.info("################ SOURCE: {} seen with IP: {}", srcMac, srcIp);
@@ -190,7 +182,7 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
                                 .setExact(MatchField.ETH_SRC, srcMac)
                                 .setExact(MatchField.ETH_DST, dstMac)
                                 .setExact(MatchField.IPV4_DST, dstIp)
-                                .setExact(MatchField.IN_PORT, ofPort)
+                                .setExact(MatchField.IN_PORT, inOFPort)
                                 .build();
 
                         OFFlowAdd.Builder builder = myFactory.buildFlowAdd();
@@ -250,16 +242,22 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
 
                     }
 
+                    Integer tableId = ipToTableIdMap.get(srcIp.toString());
+                    if (tableId == null) {
+                        tableId = createNewTableEntryForIP(srcIp.toString());
+                    }
+
                     Match topLevelMatch = myFactory.buildMatch()
                             .setExact(MatchField.ETH_TYPE, EthType.IPv4)
                             .setExact(MatchField.IPV4_SRC, srcIp)
                             .setExact(MatchField.ETH_SRC, srcMac)
-                            .setExact(MatchField.IN_PORT, ofPort)
+                            .setExact(MatchField.IN_PORT, inOFPort)
                             .build();
 
                     ArrayList<OFInstruction> gotoTableInstructionList = new ArrayList<>();
                     OFInstructionGotoTable gotoTableInstruction =
-                            instructions.buildGotoTable().setTableId(TableId.of(ofPort.getPortNumber())).build();
+                            instructions.buildGotoTable().setTableId(TableId.of(tableId)).build();
+//                            instructions.buildGotoTable().setTableId(TableId.of(inOFPort.getPortNumber())).build();
                     gotoTableInstructionList.add(gotoTableInstruction);
 
                     OFFlowAdd goToTableFlow = myFactory.buildFlowAdd()
@@ -287,7 +285,7 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
                                 .setExact(MatchField.ETH_TYPE, EthType.IPv4)
                                 .setExact(MatchField.IPV4_DST, newNeighbour)
 //                                .setExact(MatchField.ETH_DST, macAdd)
-                                .setExact(MatchField.IN_PORT, ofPort)
+                                .setExact(MatchField.IN_PORT, inOFPort)
                                 .build();
 
                         ArrayList<OFInstruction> normalFlowInstructionList = new ArrayList<>();
@@ -306,7 +304,7 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
                                 .setPriority(MAX_PRIORITY)
                                 .setMatch(allowAdjacentFlowMatch)
                                 .setInstructions(normalFlowInstructionList)
-                                .setTableId(TableId.of(ofPort.getPortNumber()))
+                                .setTableId(TableId.of(tableId))
                                 .build();
                         ovsSwitch.write(allowNormalFlow);
                     }
@@ -323,7 +321,7 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
                             .setPriority(MAX_PRIORITY - 2)
                             .setMatch(topLevelMatch)
                             .setInstructions(dropFlowInstructionList)
-                            .setTableId(TableId.of(ofPort.getPortNumber()))
+                            .setTableId(TableId.of(tableId))
                             .build();
 
                     ovsSwitch.write(dropFlow);
@@ -338,6 +336,13 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
         return Command.CONTINUE;
     }
 
+    private int createNewTableEntryForIP(String ipAddress) {
+        //TODO:: Need to remove the table Ids later
+        int nextTableId = flowTableBits.nextClearBit(0);
+        flowTableBits.set(nextTableId);
+        ipToTableIdMap.put(ipAddress, nextTableId);
+        return nextTableId;
+    }
 
 //    private String getCustomerFromSubnet(IPv4Address srcIp) throws FlowControllerException {
 //        String[] ipStringArr = srcIp.toString().split("\\" + PERIOD);

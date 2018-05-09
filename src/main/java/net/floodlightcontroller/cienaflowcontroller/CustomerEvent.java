@@ -62,8 +62,6 @@ public class CustomerEvent {
     }
 
     private void addCustomerContainer(CustomerContainer newContainer) {
-        logger.info("$$$$$$$    [" + newContainer.getIpAddress() + "]-[" + newContainer.getName() + "]  $$$$$$$$");
-        logger.info("$$$$$$$    [" + newContainer.getJSONString() + "]  $$$$$$$$");
         ipToContainerMap.put(newContainer.getIpAddress(), newContainer);
         cnameToContainerMap.put(newContainer.getName(), newContainer);
         idxToContainerMap.put(newContainer.getIndex(), newContainer);
