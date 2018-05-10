@@ -257,6 +257,7 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
                             .setExact(MatchField.IPV4_SRC, srcIp)
                             .setExact(MatchField.ETH_SRC, srcMac)
                             .setExact(MatchField.IN_PORT, inOFPort)
+                            .setExact(MatchField.IP_PROTO, IpProtocol.TCP)
                             .build();
 
                     ArrayList<OFInstruction> gotoTableInstructionList = new ArrayList<>();
