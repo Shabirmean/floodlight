@@ -282,6 +282,7 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
 //                    CustomerContainer srcContainer = customerContainers.get(srcIp.toString());
 //
 //                    CustomerContainer[] adjacentContainers = getAdjacentContainers(srcContainer, customerContainers);
+                    logger.info("######## Illegal IPs: " + srcIp.toString());
                     List<IPv4Address> neighbours = cienaFlowRepository.getNeighbourIps(srcIp);
                     OFFlowAdd.Builder builder = myFactory.buildFlowAdd();
                     for (IPv4Address newNeighbour : neighbours) {

@@ -176,6 +176,7 @@ public class FlowRepository implements MqttCallback {
         List<String> neighbourIndexes = getNeighbourIps(ipAddress.toString());
         for (String indx : neighbourIndexes) {
             String ipAdd = customerEvent.getIpFromIndex(indx);
+            logger.info("AAAAAAAAAAAAAAAAAAAAAAAAAAAA IPADDRESS - " + ipAdd);
             adjacentIpAddresses.add(IPv4Address.of(ipAdd));
         }
         return adjacentIpAddresses;
