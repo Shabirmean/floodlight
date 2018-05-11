@@ -95,38 +95,42 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
         IPv4Address srcIp = ipv4.getSourceAddress();
         IPv4Address dstIp = ipv4.getDestinationAddress();
 
-        // If it is an ethernet frame
-        if (eth.getEtherType() == EthType.IPv4) {
-            // if it is a UDP Packet and its source is not the OVS SWITCH itself
-            if (ipv4.getProtocol() == IpProtocol.UDP && srcMac != switchMac) {
-                controlsManager.processReadyStateUDP(cienaFlowRepository, ipv4);
-
-            } else {
-                // if the incoming packet is between an Ingress (In or Out) and its neighbour
-                if ((
-                        cienaFlowRepository.isIngressContainerIp(srcIp.toString()) &&
-                                cienaFlowRepository.isNeighbourOfIngress(dstIp.toString())
-                ) || (
-                        cienaFlowRepository.isIngressContainerIp(dstIp.toString()) &&
-                                cienaFlowRepository.isNeighbourOfIngress(srcIp.toString()))) {
-                    controlsManager.addAllowIngressToNeighbourFlow();
-
-                    // if the incoming packet is [TO] or [FROM] the OVS
-                } else if (srcMac.toString().equals(switchMac.toString()) ||
-                        dstMac.toString().equals(switchMac.toString())) {
-                    controlsManager.addAllowFlowsToAndFromOVS();
+        try {
+            // If it is an ethernet frame
+            if (eth.getEtherType() == EthType.IPv4) {
+                // if it is a UDP Packet and its source is not the OVS SWITCH itself
+                if (ipv4.getProtocol() == IpProtocol.UDP && srcMac != switchMac) {
+                    controlsManager.processReadyStateUDP(cienaFlowRepository, ipv4);
 
                 } else {
-                    List<IPv4Address> neighbours = cienaFlowRepository.getNeighbourIps(srcIp);
-                    Integer tableId = ipToTableIdMap.get(srcIp.toString());
-                    if (tableId == null) {
-                        tableId = createNewTableEntryForIP(srcIp.toString());
+                    // if the incoming packet is between an Ingress (In or Out) and its neighbour
+                    if ((
+                            cienaFlowRepository.isIngressContainerIp(srcIp.toString()) &&
+                                    cienaFlowRepository.isNeighbourOfIngress(dstIp.toString())
+                    ) || (
+                            cienaFlowRepository.isIngressContainerIp(dstIp.toString()) &&
+                                    cienaFlowRepository.isNeighbourOfIngress(srcIp.toString()))) {
+                        controlsManager.addAllowIngressToNeighbourFlow();
+
+                        // if the incoming packet is [TO] or [FROM] the OVS
+                    } else if (srcMac.toString().equals(switchMac.toString()) ||
+                            dstMac.toString().equals(switchMac.toString())) {
+                        controlsManager.addAllowFlowsToAndFromOVS();
+
+                    } else {
+                        List<IPv4Address> neighbours = cienaFlowRepository.getNeighbourIps(srcIp);
+                        Integer tableId = ipToTableIdMap.get(srcIp.toString());
+                        if (tableId == null) {
+                            tableId = createNewTableEntryForIP(srcIp.toString());
+                        }
+                        controlsManager.gotoContainerSpecificFlowTable(tableId);
+                        controlsManager.addAllowFlowToNeighbours(srcIp, tableId, neighbours);
+                        controlsManager.dropAllOtherFlows(tableId);
                     }
-                    controlsManager.gotoContainerSpecificFlowTable(tableId);
-                    controlsManager.addAllowFlowToNeighbours(srcIp, tableId, neighbours);
-                    controlsManager.dropAllOtherFlows(tableId);
                 }
             }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
         return Command.CONTINUE;
     }
