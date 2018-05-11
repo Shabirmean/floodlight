@@ -86,18 +86,18 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
         OFFactory myFactory = OFFactories.getFactory(msg.getVersion());
         Ethernet eth = IFloodlightProviderService.bcStore.get(cntx, IFloodlightProviderService.CONTEXT_PI_PAYLOAD);
         OFPort inOFPort = OFMessageUtils.getInPort((OFPacketIn) msg);
-
         FlowControlsManager controlsManager = new FlowControlsManager(ovsSwitch, myFactory, eth, inOFPort);
-        MacAddress switchMac = ovsSwitch.getPort(OFPort.LOCAL).getHwAddr();
-        IPv4 ipv4 = (IPv4) eth.getPayload();
-        MacAddress srcMac = eth.getSourceMACAddress();
-        MacAddress dstMac = eth.getDestinationMACAddress();
-        IPv4Address srcIp = ipv4.getSourceAddress();
-        IPv4Address dstIp = ipv4.getDestinationAddress();
 
         try {
             // If it is an ethernet frame
             if (eth.getEtherType() == EthType.IPv4) {
+                MacAddress switchMac = ovsSwitch.getPort(OFPort.LOCAL).getHwAddr();
+                IPv4 ipv4 = (IPv4) eth.getPayload();
+                MacAddress srcMac = eth.getSourceMACAddress();
+                MacAddress dstMac = eth.getDestinationMACAddress();
+                IPv4Address srcIp = ipv4.getSourceAddress();
+                IPv4Address dstIp = ipv4.getDestinationAddress();
+
                 // if it is a UDP Packet and its source is not the OVS SWITCH itself
                 if (ipv4.getProtocol() == IpProtocol.UDP && srcMac != switchMac) {
                     controlsManager.processReadyStateUDP(cienaFlowRepository, ipv4);
