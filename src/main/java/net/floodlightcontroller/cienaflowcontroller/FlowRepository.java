@@ -131,13 +131,12 @@ public class FlowRepository implements MqttCallback {
         synchronized (eventIdToEventsMap) {
             String eventId = readyContainer.getEventId();
             CustomerEvent anEvent = eventIdToEventsMap.get(eventId);
+            logger.info("ReadyContainer > " + readyContainer.getName() + " - " + readyContainer.getIpAddress());
             if (anEvent != null) {
-                logger.info("@@@@@@@@@@@@@ > " + readyContainer.getName() + " - " + readyContainer.getIpAddress());
                 if (anEvent.getCustomer().equals(readyContainer.getCustomer().toUpperCase())) {
                     anEvent.updateReadyState(readyContainer.getIpAddress(), readyContainer.getName());
                 }
             } else {
-                logger.info("$$$$$$$$$$$$$ > " + readyContainer.getName() + " - " + readyContainer.getIpAddress());
                 ArrayList<ReadyStateHolder> readyContainerList = eventsToReadyConMap.get(eventId);
                 if (readyContainerList == null) {
                     readyContainerList = new ArrayList<>();
@@ -176,7 +175,6 @@ public class FlowRepository implements MqttCallback {
         List<String> neighbourIndexes = getNeighbourIps(ipAddress.toString());
         for (String indx : neighbourIndexes) {
             String ipAdd = customerEvent.getIpFromIndex(indx);
-            logger.info("AAAAAAAAAAAAAAAAAAAAAAAAAAAA IPADDRESS - " + ipAdd);
             adjacentIpAddresses.add(IPv4Address.of(ipAdd));
         }
         return adjacentIpAddresses;

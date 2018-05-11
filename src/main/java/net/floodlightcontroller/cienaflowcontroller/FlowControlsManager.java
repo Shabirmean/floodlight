@@ -49,7 +49,7 @@ class FlowControlsManager {
 
 
     void processReadyStateUDP(FlowRepository cienaFlowRepository, IPv4 ipv4) {
-        logger.info("Processing UDP Packet received.");
+        logger.info("Processing received UDP Packet.");
         IPAddress srcIp = ipv4.getSourceAddress();
         UDP udp = (UDP) ipv4.getPayload();
         Data udpData = (Data) udp.getPayload();
@@ -179,9 +179,10 @@ class FlowControlsManager {
     }
 
     void addAllowFlowToNeighbours(IPv4Address srcIp, Integer tableId, List<IPv4Address> neighbours) {
-        logger.info("Adding (OF) controls for flows container [" + srcIp.toString() + "] in table - " + tableId);
+        logger.info("Adding (OF) controls for  of container [" + srcIp.toString() + "] in table - " + tableId);
         OFFlowAdd.Builder builder = ofFactory.buildFlowAdd();
         for (IPv4Address newNeighbour : neighbours) {
+            logger.info("NEIGHBOUR IP-ADDRESS - " + newNeighbour.toString());
             Match allowAdjacentFlowMatch = ofFactory.buildMatch()
                     .setExact(MatchField.ETH_TYPE, EthType.IPv4)
                     .setExact(MatchField.IPV4_DST, newNeighbour)
