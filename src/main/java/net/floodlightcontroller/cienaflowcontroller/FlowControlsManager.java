@@ -211,6 +211,38 @@ class FlowControlsManager {
         }
     }
 
+    void allowUDPFlowsToOVS(Integer tableId){
+        logger.info("Adding (OF) controls to drop all other flows from the container in its flow-table");
+        MacAddress switchMac = ovsSwitch.getPort(OFPort.LOCAL).getHwAddr();
+        IPv4 ipv4 = (IPv4) eth.getPayload();
+        MacAddress srcMac = eth.getSourceMACAddress();
+        IPv4Address srcIp = ipv4.getSourceAddress();
+
+        Match allowUDPFlowMatch = ofFactory.buildMatch()
+                .setExact(MatchField.ETH_TYPE, EthType.IPv4)
+                .setExact(MatchField.IPV4_SRC, srcIp)
+                .setExact(MatchField.ETH_SRC, srcMac)
+                .setExact(MatchField.ETH_DST, switchMac)
+                .setExact(MatchField.IN_PORT, inOFPort)
+                .setExact(MatchField.IP_PROTO, IpProtocol.UDP)
+                .build();
+
+        OFInstructions instructions = ofFactory.instructions();
+        ArrayList<OFInstruction> dropFlowInstructionList = new ArrayList<>();
+        ArrayList<OFAction> dropFlowActionList = new ArrayList<>();
+        OFInstructionApplyActions dropFlowInstruction =
+                instructions.buildApplyActions().setActions(dropFlowActionList).build();
+        dropFlowInstructionList.add(dropFlowInstruction);
+        OFFlowAdd allowUDPFlow = ofFactory.buildFlowAdd()
+                .setBufferId(OFBufferId.NO_BUFFER)
+                .setPriority(MAX_PRIORITY - 1)
+                .setMatch(allowUDPFlowMatch)
+                .setInstructions(dropFlowInstructionList)
+                .setTableId(TableId.of(tableId))
+                .build();
+        ovsSwitch.write(allowUDPFlow);
+    }
+
     void dropAllOtherFlows(Integer tableId) {
         logger.info("Adding (OF) controls to drop all other flows from the container in its flow-table");
         IPv4 ipv4 = (IPv4) eth.getPayload();
@@ -222,7 +254,7 @@ class FlowControlsManager {
                 .setExact(MatchField.IPV4_SRC, srcIp)
                 .setExact(MatchField.ETH_SRC, srcMac)
                 .setExact(MatchField.IN_PORT, inOFPort)
-                .setExact(MatchField.IP_PROTO, IpProtocol.TCP)
+//                .setExact(MatchField.IP_PROTO, IpProtocol.TCP)
                 .build();
 
         OFInstructions instructions = ofFactory.instructions();
