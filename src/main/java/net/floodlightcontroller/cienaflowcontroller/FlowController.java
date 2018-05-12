@@ -125,7 +125,7 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
                         }
                         controlsManager.gotoContainerSpecificFlowTable(tableId);
                         controlsManager.addAllowFlowToNeighbours(srcIp, tableId, neighbours);
-                        controlsManager.allowUDPFlowsToOVS(tableId);
+//                        controlsManager.allowUDPFlowsToOVS(tableId);
                         controlsManager.dropAllOtherFlows(tableId);
                     }
                 }
