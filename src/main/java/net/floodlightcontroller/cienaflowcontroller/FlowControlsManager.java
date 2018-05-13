@@ -241,7 +241,7 @@ class FlowControlsManager {
         normalFlowInstructionList.add(normalFlowInstruction);
         OFFlowAdd allowUDPFlow = ofFactory.buildFlowAdd()
                 .setBufferId(OFBufferId.NO_BUFFER)
-                .setPriority(MAX_PRIORITY - 1)
+                .setPriority(MAX_PRIORITY)
                 .setMatch(allowUDPFlowMatch)
                 .setInstructions(normalFlowInstructionList)
                 .setTableId(TableId.of(tableId))
