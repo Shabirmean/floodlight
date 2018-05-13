@@ -99,10 +99,10 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
                 IPv4Address dstIp = ipv4.getDestinationAddress();
 
                 // if it is a UDP Packet and its source is not the OVS SWITCH itself
-                if (ipv4.getProtocol() == IpProtocol.UDP && srcMac != switchMac) {
-                    controlsManager.processReadyStateUDP(cienaFlowRepository, ipv4);
-
-                } else {
+//                if (ipv4.getProtocol() == IpProtocol.UDP && srcMac != switchMac) {
+//                    controlsManager.processReadyStateUDP(cienaFlowRepository, ipv4);
+//
+//                } else {
                     // if the incoming packet is between an Ingress (In or Out) and its neighbour
                     if ((
                             cienaFlowRepository.isIngressContainerIp(srcIp.toString()) &&
@@ -128,7 +128,7 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
 //                        controlsManager.allowUDPFlowsToOVS(tableId);
                         controlsManager.dropAllOtherFlows(tableId);
                     }
-                }
+//                }
             }
         } catch (Exception e) {
             e.printStackTrace();
