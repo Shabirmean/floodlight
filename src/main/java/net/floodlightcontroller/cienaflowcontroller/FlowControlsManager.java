@@ -220,11 +220,11 @@ class FlowControlsManager {
 
         Match allowUDPFlowMatch = ofFactory.buildMatch()
                 .setExact(MatchField.ETH_TYPE, EthType.IPv4)
-                .setExact(MatchField.IPV4_SRC, srcIp)
-                .setExact(MatchField.ETH_SRC, srcMac)
+//                .setExact(MatchField.IPV4_SRC, srcIp)
+//                .setExact(MatchField.ETH_SRC, srcMac)
                 .setExact(MatchField.ETH_DST, switchMac)
                 .setExact(MatchField.IN_PORT, inOFPort)
-                .setExact(MatchField.IP_PROTO, IpProtocol.UDP)
+//                .setExact(MatchField.IP_PROTO, IpProtocol.UDP)
                 .build();
 
         OFActions actions = ofFactory.actions();
