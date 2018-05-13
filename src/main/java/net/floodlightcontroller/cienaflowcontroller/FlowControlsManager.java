@@ -227,17 +227,22 @@ class FlowControlsManager {
                 .setExact(MatchField.IP_PROTO, IpProtocol.UDP)
                 .build();
 
+        OFActions actions = ofFactory.actions();
         OFInstructions instructions = ofFactory.instructions();
-        ArrayList<OFInstruction> dropFlowInstructionList = new ArrayList<>();
-        ArrayList<OFAction> dropFlowActionList = new ArrayList<>();
-        OFInstructionApplyActions dropFlowInstruction =
-                instructions.buildApplyActions().setActions(dropFlowActionList).build();
-        dropFlowInstructionList.add(dropFlowInstruction);
+        ArrayList<OFInstruction> normalFlowInstructionList = new ArrayList<>();
+        ArrayList<OFAction> normalFlowActionList = new ArrayList<>();
+
+        OFActionOutput normalFlowAction =
+                actions.buildOutput().setMaxLen(0xFFffFFff).setPort(OFPort.NORMAL).build();
+        normalFlowActionList.add(normalFlowAction);
+        OFInstructionApplyActions normalFlowInstruction =
+                instructions.buildApplyActions().setActions(normalFlowActionList).build();
+        normalFlowInstructionList.add(normalFlowInstruction);
         OFFlowAdd allowUDPFlow = ofFactory.buildFlowAdd()
                 .setBufferId(OFBufferId.NO_BUFFER)
                 .setPriority(MAX_PRIORITY - 1)
                 .setMatch(allowUDPFlowMatch)
-                .setInstructions(dropFlowInstructionList)
+                .setInstructions(normalFlowInstructionList)
                 .setTableId(TableId.of(tableId))
                 .build();
         ovsSwitch.write(allowUDPFlow);
