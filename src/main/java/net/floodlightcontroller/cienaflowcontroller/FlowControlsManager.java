@@ -159,7 +159,7 @@ class FlowControlsManager {
                 .setExact(MatchField.IPV4_SRC, srcIp)
                 .setExact(MatchField.ETH_SRC, srcMac)
                 .setExact(MatchField.IN_PORT, inOFPort)
-                .setExact(MatchField.IP_PROTO, IpProtocol.TCP)
+//                .setExact(MatchField.IP_PROTO, IpProtocol.TCP)
                 .build();
 
         OFInstructions instructions = ofFactory.instructions();
