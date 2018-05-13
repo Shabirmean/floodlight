@@ -222,7 +222,8 @@ class FlowControlsManager {
                 .setExact(MatchField.ETH_TYPE, EthType.IPv4)
 //                .setExact(MatchField.IPV4_SRC, srcIp)
 //                .setExact(MatchField.ETH_SRC, srcMac)
-                .setExact(MatchField.ETH_DST, switchMac)
+//                .setExact(MatchField.ETH_DST, switchMac)
+                .setExact(MatchField.IPV4_DST, IPv4Address.of("193.168.0.1"))
                 .setExact(MatchField.IN_PORT, inOFPort)
 //                .setExact(MatchField.IP_PROTO, IpProtocol.UDP)
                 .build();
