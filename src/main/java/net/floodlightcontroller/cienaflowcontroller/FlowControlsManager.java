@@ -225,7 +225,7 @@ class FlowControlsManager {
 //                .setExact(MatchField.ETH_DST, switchMac)
                 .setExact(MatchField.IPV4_DST, IPv4Address.of("193.168.0.1"))
                 .setExact(MatchField.IN_PORT, inOFPort)
-//                .setExact(MatchField.IP_PROTO, IpProtocol.UDP)
+                .setExact(MatchField.IP_PROTO, IpProtocol.UDP)
                 .build();
 
         OFActions actions = ofFactory.actions();
@@ -234,7 +234,7 @@ class FlowControlsManager {
         ArrayList<OFAction> normalFlowActionList = new ArrayList<>();
 
         OFActionOutput normalFlowAction =
-                actions.buildOutput().setMaxLen(0xFFffFFff).setPort(OFPort.NORMAL).build();
+                actions.buildOutput().setMaxLen(0xFFffFFff).setPort(OFPort.CONTROLLER).build();
         normalFlowActionList.add(normalFlowAction);
         OFInstructionApplyActions normalFlowInstruction =
                 instructions.buildApplyActions().setActions(normalFlowActionList).build();
