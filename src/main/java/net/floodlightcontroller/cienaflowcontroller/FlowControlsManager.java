@@ -1,5 +1,6 @@
 package net.floodlightcontroller.cienaflowcontroller;
 
+import io.netty.util.internal.ConcurrentSet;
 import net.floodlightcontroller.core.IOFSwitch;
 import net.floodlightcontroller.packet.Data;
 import net.floodlightcontroller.packet.Ethernet;
@@ -21,7 +22,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static net.floodlightcontroller.cienaflowcontroller.FlowControllerConstants.*;
 
@@ -30,7 +34,7 @@ import static net.floodlightcontroller.cienaflowcontroller.FlowControllerConstan
  */
 class FlowControlsManager {
     protected static Logger logger = LoggerFactory.getLogger(FlowControlsManager.class);
-
+    private static final Set<String> readyStateReceived = new ConcurrentSet<>();
     private static final int EVENT_ID_INDEX = 0;
     private static final int CUSTOMER_INDEX = 1;
     private static final int HOSTNAME_INDEX = 2;
@@ -47,26 +51,27 @@ class FlowControlsManager {
         this.inOFPort = inOFPort;
     }
 
-
     boolean processReadyStateUDP(FlowRepository cienaFlowRepository, IPv4 ipv4) {
         logger.info("Processing received UDP Packet.");
-        IPAddress srcIp = ipv4.getSourceAddress();
+        IPv4Address srcIp = ipv4.getSourceAddress();
         UDP udp = (UDP) ipv4.getPayload();
         Data udpData = (Data) udp.getPayload();
         byte[] udpDataBytes = udpData.getData();
         String udpDataString = new String(udpDataBytes);
+        String containerIp = srcIp.toString();
 
-        if (udpDataString.contains(CONTAINER_READY)) {
+        if (!readyStateReceived.contains(containerIp) && udpDataString.contains(CONTAINER_READY)) {
             logger.info("[UDP Packet with ready state] " + udpDataString);
             // "<EVENT_ID>:<CUSTOMER>:<HOSTNAME>:READY"
             String[] stringElements = udpDataString.split(COLON);
             String eventId = stringElements[EVENT_ID_INDEX];
             String customer = stringElements[CUSTOMER_INDEX];
             String hostname = stringElements[HOSTNAME_INDEX];
-            String containerIp = srcIp.toString();
 
             ReadyStateHolder readyCon = new ReadyStateHolder(eventId, customer, hostname, containerIp);
-            return cienaFlowRepository.addReadyStateContainer(readyCon);
+            cienaFlowRepository.addReadyStateContainer(readyCon);
+            readyStateReceived.add(containerIp);
+            return true;
         }
         return false;
     }

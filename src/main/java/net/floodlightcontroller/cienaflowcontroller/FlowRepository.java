@@ -128,28 +128,24 @@ public class FlowRepository implements MqttCallback {
         }
     }
 
-    boolean addReadyStateContainer(ReadyStateHolder readyContainer) {
+    void addReadyStateContainer(ReadyStateHolder readyContainer) {
         synchronized (eventIdToEventsMap) {
-            if (isFirstReadyMsg(readyContainer.getEventId(), readyContainer.getIpAddress())) {
-                String eventId = readyContainer.getEventId();
-                CustomerEvent anEvent = eventIdToEventsMap.get(eventId);
-                logger.info("ReadyContainer > " + readyContainer.getName() + " - " + readyContainer.getIpAddress());
-                if (anEvent != null) {
-                    if (anEvent.getCustomer().equals(readyContainer.getCustomer().toUpperCase())) {
-                        anEvent.updateReadyState(readyContainer.getIpAddress(), readyContainer.getName());
-                    }
-                } else {
-                    ArrayList<ReadyStateHolder> readyContainerList = evntsToReadyConMap.get(eventId);
-                    if (readyContainerList == null) {
-                        readyContainerList = new ArrayList<>();
-                    }
-                    readyContainerList.add(readyContainer);
-                    evntsToReadyConMap.put(eventId, readyContainerList);
+            String eventId = readyContainer.getEventId();
+            CustomerEvent anEvent = eventIdToEventsMap.get(eventId);
+            logger.info("ReadyContainer > " + readyContainer.getName() + " - " + readyContainer.getIpAddress());
+            if (anEvent != null) {
+                if (anEvent.getCustomer().equals(readyContainer.getCustomer().toUpperCase())) {
+                    anEvent.updateReadyState(readyContainer.getIpAddress(), readyContainer.getName());
                 }
-                return true;
+            } else {
+                ArrayList<ReadyStateHolder> readyContainerList = evntsToReadyConMap.get(eventId);
+                if (readyContainerList == null) {
+                    readyContainerList = new ArrayList<>();
+                }
+                readyContainerList.add(readyContainer);
+                evntsToReadyConMap.put(eventId, readyContainerList);
             }
         }
-        return false;
     }
 
     boolean isIngressContainerIp(String ipAddress) {
@@ -188,17 +184,4 @@ public class FlowRepository implements MqttCallback {
         String allowedFlows = customerContainer.getAllowedFlows();
         return Arrays.asList(allowedFlows.split("\\s*,\\s*"));
     }
-
-    private boolean isFirstReadyMsg(String eventId, String ipAddress) {
-        ArrayList<ReadyStateHolder> readyStatesContainers = evntsToReadyConMap.get(eventId);
-        if (readyStatesContainers != null) {
-            for (ReadyStateHolder readyContainer : readyStatesContainers) {
-                if (readyContainer.getIpAddress().equals(ipAddress)) {
-                    return false;
-                }
-            }
-        }
-        return true;
-    }
-
 }
