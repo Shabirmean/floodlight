@@ -220,10 +220,10 @@ class FlowControlsManager {
 
         Match allowUDPFlowMatch = ofFactory.buildMatch()
                 .setExact(MatchField.ETH_TYPE, EthType.IPv4)
-//                .setExact(MatchField.IPV4_SRC, srcIp)
-//                .setExact(MatchField.ETH_SRC, srcMac)
-//                .setExact(MatchField.ETH_DST, switchMac)
-                .setExact(MatchField.IPV4_DST, IPv4Address.of("193.168.0.1"))
+                .setExact(MatchField.IPV4_SRC, srcIp)
+                .setExact(MatchField.ETH_SRC, srcMac)
+                .setExact(MatchField.ETH_DST, switchMac)
+//                .setExact(MatchField.IPV4_DST, IPv4Address.of("193.168.0.1"))
                 .setExact(MatchField.IN_PORT, inOFPort)
                 .setExact(MatchField.IP_PROTO, IpProtocol.UDP)
                 .build();
@@ -241,7 +241,7 @@ class FlowControlsManager {
         normalFlowInstructionList.add(normalFlowInstruction);
         OFFlowAdd allowUDPFlow = ofFactory.buildFlowAdd()
                 .setBufferId(OFBufferId.NO_BUFFER)
-                .setPriority(MAX_PRIORITY)
+                .setPriority(MAX_PRIORITY - 1)
                 .setMatch(allowUDPFlowMatch)
                 .setInstructions(normalFlowInstructionList)
                 .setTableId(TableId.of(tableId))
