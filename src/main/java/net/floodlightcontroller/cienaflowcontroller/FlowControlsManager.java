@@ -40,7 +40,7 @@ class FlowControlsManager {
     private Ethernet eth;
     private OFPort inOFPort;
 
-    FlowControlsManager(IOFSwitch ovsSwitch, OFFactory ofFactory, Ethernet eth, OFPort inOFPort){
+    FlowControlsManager(IOFSwitch ovsSwitch, OFFactory ofFactory, Ethernet eth, OFPort inOFPort) {
         this.ovsSwitch = ovsSwitch;
         this.ofFactory = ofFactory;
         this.eth = eth;
@@ -48,7 +48,7 @@ class FlowControlsManager {
     }
 
 
-    void processReadyStateUDP(FlowRepository cienaFlowRepository, IPv4 ipv4) {
+    boolean processReadyStateUDP(FlowRepository cienaFlowRepository, IPv4 ipv4) {
         logger.info("Processing received UDP Packet.");
         IPAddress srcIp = ipv4.getSourceAddress();
         UDP udp = (UDP) ipv4.getPayload();
@@ -64,9 +64,11 @@ class FlowControlsManager {
             String customer = stringElements[CUSTOMER_INDEX];
             String hostname = stringElements[HOSTNAME_INDEX];
             String containerIp = srcIp.toString();
+
             ReadyStateHolder readyCon = new ReadyStateHolder(eventId, customer, hostname, containerIp);
-            cienaFlowRepository.addReadyStateContainer(readyCon);
+            return cienaFlowRepository.addReadyStateContainer(readyCon);
         }
+        return false;
     }
 
     void addAllowIngressToNeighbourFlow() {
@@ -159,7 +161,6 @@ class FlowControlsManager {
                 .setExact(MatchField.IPV4_SRC, srcIp)
                 .setExact(MatchField.ETH_SRC, srcMac)
                 .setExact(MatchField.IN_PORT, inOFPort)
-//                .setExact(MatchField.IP_PROTO, IpProtocol.TCP)
                 .build();
 
         OFInstructions instructions = ofFactory.instructions();
@@ -211,7 +212,7 @@ class FlowControlsManager {
         }
     }
 
-    void allowUDPFlowsToOVS(Integer tableId){
+    void allowUDPFlowsToOVS(Integer tableId) {
         logger.info("Adding (OF) controls to drop all other flows from the container in its flow-table");
         MacAddress switchMac = ovsSwitch.getPort(OFPort.LOCAL).getHwAddr();
         IPv4 ipv4 = (IPv4) eth.getPayload();
@@ -260,7 +261,6 @@ class FlowControlsManager {
                 .setExact(MatchField.IPV4_SRC, srcIp)
                 .setExact(MatchField.ETH_SRC, srcMac)
                 .setExact(MatchField.IN_PORT, inOFPort)
-//                .setExact(MatchField.IP_PROTO, IpProtocol.TCP)
                 .build();
 
         OFInstructions instructions = ofFactory.instructions();

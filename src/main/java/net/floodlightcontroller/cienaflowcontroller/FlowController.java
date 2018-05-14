@@ -100,7 +100,10 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
 
                 // if it is a UDP Packet and its source is not the OVS SWITCH itself
                 if (ipv4.getProtocol() == IpProtocol.UDP && srcMac != switchMac) {
-                    controlsManager.processReadyStateUDP(cienaFlowRepository, ipv4);
+                    boolean validUDPPacket = controlsManager.processReadyStateUDP(cienaFlowRepository, ipv4);
+                    if (validUDPPacket) {
+                        setupContainerSpecificTableEntries(controlsManager, srcIp);
+                    }
                 } else {
                     // if the incoming packet is between an Ingress (In or Out) and its neighbour
                     if ((
@@ -115,15 +118,7 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
                             dstMac.toString().equals(switchMac.toString())) {
                         controlsManager.addAllowFlowsToAndFromOVS();
                     } else {
-                        List<IPv4Address> neighbours = cienaFlowRepository.getNeighbourIps(srcIp);
-                        Integer tableId = ipToTableIdMap.get(srcIp.toString());
-                        if (tableId == null) {
-                            tableId = createNewTableEntryForIP(srcIp.toString());
-                        }
-                        controlsManager.gotoContainerSpecificFlowTable(tableId);
-                        controlsManager.addAllowFlowToNeighbours(srcIp, tableId, neighbours);
-                        controlsManager.allowUDPFlowsToOVS(tableId);
-//                        controlsManager.dropAllOtherFlows(tableId);
+                        setupContainerSpecificTableEntries(controlsManager, srcIp);
                     }
                 }
             }
@@ -131,6 +126,24 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
             e.printStackTrace();
         }
         return Command.CONTINUE;
+    }
+
+    private void setupContainerSpecificTableEntries(FlowControlsManager controlsManager, IPv4Address srcIp){
+        int tableId = getFlowTableId(srcIp);
+        List<IPv4Address> neighbours = cienaFlowRepository.getNeighbourIps(srcIp);
+        controlsManager.gotoContainerSpecificFlowTable(tableId);
+        controlsManager.addAllowFlowToNeighbours(srcIp, tableId, neighbours);
+        controlsManager.allowUDPFlowsToOVS(tableId);
+        controlsManager.dropAllOtherFlows(tableId);
+    }
+
+
+    private int getFlowTableId(IPv4Address srcIp){
+        Integer tableId = ipToTableIdMap.get(srcIp.toString());
+        if (tableId == null) {
+            tableId = createNewTableEntryForIP(srcIp.toString());
+        }
+        return tableId;
     }
 
     private int createNewTableEntryForIP(String ipAddress) {

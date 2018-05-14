@@ -24,12 +24,13 @@ import static net.floodlightcontroller.cienaflowcontroller.FlowControllerConstan
  */
 public class FlowRepository implements MqttCallback {
     protected static Logger logger;
+
     private final ConcurrentHashMap<String, CustomerEvent> eventIdToEventsMap = new ConcurrentHashMap<>();
-    private ConcurrentHashMap<String, CustomerEvent> customerToEventsMap = new ConcurrentHashMap<>();
-    private ConcurrentHashMap<String, CustomerEvent> subnetToEventsMap = new ConcurrentHashMap<>();
-    private ConcurrentHashMap<String, ArrayList<ReadyStateHolder>> eventsToReadyConMap = new ConcurrentHashMap<>();
-    private ConcurrentHashMap<String, CustomerContainer> ipsToCustomerConMap = new ConcurrentHashMap<>();
-    private ArrayList<String> ingressContainerIps = new ArrayList<>();
+    private final ConcurrentHashMap<String, CustomerEvent> customerToEventsMap = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, CustomerEvent> subnetToEventsMap = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, ArrayList<ReadyStateHolder>> evntsToReadyConMap = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, CustomerContainer> ipsToCustomerConMap = new ConcurrentHashMap<>();
+    private final ArrayList<String> ingressContainerIps = new ArrayList<>();
 
     FlowRepository() {
         logger = LoggerFactory.getLogger(FlowRepository.class);
@@ -111,7 +112,7 @@ public class FlowRepository implements MqttCallback {
                 synchronized (eventIdToEventsMap) {
                     newEvent = new CustomerEvent(eventId, customer, subnet);
                     newEvent.addCustomerContainers(containerList);
-                    ArrayList<ReadyStateHolder> readyContainerList = eventsToReadyConMap.get(eventId);
+                    ArrayList<ReadyStateHolder> readyContainerList = evntsToReadyConMap.get(eventId);
                     if (readyContainerList != null && !readyContainerList.isEmpty()) {
                         newEvent.updateReadyState(readyContainerList);
                     }
@@ -127,24 +128,28 @@ public class FlowRepository implements MqttCallback {
         }
     }
 
-    void addReadyStateContainer(ReadyStateHolder readyContainer) {
+    boolean addReadyStateContainer(ReadyStateHolder readyContainer) {
         synchronized (eventIdToEventsMap) {
-            String eventId = readyContainer.getEventId();
-            CustomerEvent anEvent = eventIdToEventsMap.get(eventId);
-            logger.info("ReadyContainer > " + readyContainer.getName() + " - " + readyContainer.getIpAddress());
-            if (anEvent != null) {
-                if (anEvent.getCustomer().equals(readyContainer.getCustomer().toUpperCase())) {
-                    anEvent.updateReadyState(readyContainer.getIpAddress(), readyContainer.getName());
+            if (isFirstReadyMsg(readyContainer.getEventId(), readyContainer.getIpAddress())) {
+                String eventId = readyContainer.getEventId();
+                CustomerEvent anEvent = eventIdToEventsMap.get(eventId);
+                logger.info("ReadyContainer > " + readyContainer.getName() + " - " + readyContainer.getIpAddress());
+                if (anEvent != null) {
+                    if (anEvent.getCustomer().equals(readyContainer.getCustomer().toUpperCase())) {
+                        anEvent.updateReadyState(readyContainer.getIpAddress(), readyContainer.getName());
+                    }
+                } else {
+                    ArrayList<ReadyStateHolder> readyContainerList = evntsToReadyConMap.get(eventId);
+                    if (readyContainerList == null) {
+                        readyContainerList = new ArrayList<>();
+                    }
+                    readyContainerList.add(readyContainer);
+                    evntsToReadyConMap.put(eventId, readyContainerList);
                 }
-            } else {
-                ArrayList<ReadyStateHolder> readyContainerList = eventsToReadyConMap.get(eventId);
-                if (readyContainerList == null) {
-                    readyContainerList = new ArrayList<>();
-                }
-                readyContainerList.add(readyContainer);
-                eventsToReadyConMap.put(eventId, readyContainerList);
+                return true;
             }
         }
+        return false;
     }
 
     boolean isIngressContainerIp(String ipAddress) {
@@ -156,15 +161,13 @@ public class FlowRepository implements MqttCallback {
         return listOfIngressNeighbours.contains(ipAddress);
     }
 
-
     private List<String> getNeighboursOfIngress() {
-        List<String>  listOfAllNeighbours = new ArrayList<>();
+        List<String> listOfAllNeighbours = new ArrayList<>();
         for (String ingressIp : ingressContainerIps) {
             listOfAllNeighbours.addAll(getNeighbourIps(ingressIp));
         }
         return listOfAllNeighbours;
     }
-
 
     List<IPv4Address> getNeighbourIps(IPv4Address ipAddress) {
         List<IPv4Address> adjacentIpAddresses = new ArrayList<>();
@@ -184,6 +187,18 @@ public class FlowRepository implements MqttCallback {
         CustomerContainer customerContainer = ipsToCustomerConMap.get(ipAddress);
         String allowedFlows = customerContainer.getAllowedFlows();
         return Arrays.asList(allowedFlows.split("\\s*,\\s*"));
+    }
+
+    private boolean isFirstReadyMsg(String eventId, String ipAddress) {
+        ArrayList<ReadyStateHolder> readyStatesContainers = evntsToReadyConMap.get(eventId);
+        if (readyStatesContainers != null) {
+            for (ReadyStateHolder readyContainer : readyStatesContainers) {
+                if (readyContainer.getIpAddress().equals(ipAddress)) {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 
 }
