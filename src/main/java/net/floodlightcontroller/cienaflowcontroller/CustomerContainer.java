@@ -4,6 +4,7 @@ package net.floodlightcontroller.cienaflowcontroller;
 /**
  * Created by shabirmean on 2017-11-22 with some hope.
  */
+@SuppressWarnings("WeakerAccess")
 public class CustomerContainer {
     private static final String CONTNR_STRING_FORMAT =
             "{" +
@@ -36,6 +37,8 @@ public class CustomerContainer {
         this.macAddress = mac;
     }
 
+
+    @SuppressWarnings("unused")
     public String getJSONString() {
         return String.format(
                 CONTNR_STRING_FORMAT, index, cId, name, ipAddress, macAddress, borderContainer, allowedFlows);
@@ -57,6 +60,7 @@ public class CustomerContainer {
         return ipAddress;
     }
 
+    @SuppressWarnings("unused")
     public void setIpAddress(String ipAddress) {
         this.ipAddress = ipAddress;
     }

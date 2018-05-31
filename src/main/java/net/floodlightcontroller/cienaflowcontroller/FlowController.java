@@ -1,33 +1,42 @@
 package net.floodlightcontroller.cienaflowcontroller;
 
-import net.floodlightcontroller.core.*;
+import net.floodlightcontroller.core.FloodlightContext;
+import net.floodlightcontroller.core.IFloodlightProviderService;
+import net.floodlightcontroller.core.IOFMessageListener;
+import net.floodlightcontroller.core.IOFSwitch;
 import net.floodlightcontroller.core.module.FloodlightModuleContext;
 import net.floodlightcontroller.core.module.FloodlightModuleException;
 import net.floodlightcontroller.core.module.IFloodlightModule;
 import net.floodlightcontroller.core.module.IFloodlightService;
-import net.floodlightcontroller.packet.*;
+import net.floodlightcontroller.packet.Ethernet;
+import net.floodlightcontroller.packet.IPv4;
 import net.floodlightcontroller.util.OFMessageUtils;
+import org.eclipse.paho.client.mqttv3.MqttClient;
+import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
+import org.eclipse.paho.client.mqttv3.MqttException;
+import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 import org.projectfloodlight.openflow.protocol.*;
 import org.projectfloodlight.openflow.types.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
+import java.io.UnsupportedEncodingException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 
-import static net.floodlightcontroller.cienaflowcontroller.FlowControllerConstants.*;
+import static net.floodlightcontroller.cienaflowcontroller.FlowControllerConstants.MQTT_BROKER_URI;
+import static net.floodlightcontroller.cienaflowcontroller.FlowControllerConstants.MQTT_SUBSCRIBE_TOPIC;
+import static org.apache.commons.codec.CharEncoding.UTF_8;
 
 /**
  * Created by shabirmean on 2017-11-29 with some hope.
  */
 public class FlowController implements IOFMessageListener, IFloodlightModule {
     protected static Logger logger;
-    private static final int MAX_TABLE_IDS = 256;
-
     protected IFloodlightProviderService floodlightProvider;
-    private ConcurrentHashMap<String, Integer> ipToTableIdMap;
     private FlowRepository cienaFlowRepository;
-    private BitSet flowTableBits;
 
     @Override
     public String getName() {
@@ -45,10 +54,7 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
     public void init(FloodlightModuleContext context) throws FloodlightModuleException {
         logger = LoggerFactory.getLogger(FlowController.class);
         this.floodlightProvider = context.getServiceImpl(IFloodlightProviderService.class);
-        this.ipToTableIdMap = new ConcurrentHashMap<>();
         this.cienaFlowRepository = new FlowRepository();
-        this.flowTableBits = new BitSet(MAX_TABLE_IDS);
-        this.flowTableBits.set(DEFAULT_FLOW_TABLE);
         MqttListener mqttListener = new MqttListener(MQTT_BROKER_URI, MQTT_SUBSCRIBE_TOPIC);
         mqttListener.init(cienaFlowRepository);
     }
@@ -56,7 +62,7 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
     @Override
     public void startUp(FloodlightModuleContext context) throws FloodlightModuleException {
         floodlightProvider.addOFMessageListener(OFType.PACKET_IN, this);
-        debugPrint("CIENA FLOW CONTROLLER IS REGISTERED.");
+        logger.debug("########################### : " + "CIENA FLOW CONTROLLER IS REGISTERED.");
     }
 
     @Override
@@ -86,7 +92,7 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
         OFFactory myFactory = OFFactories.getFactory(msg.getVersion());
         Ethernet eth = IFloodlightProviderService.bcStore.get(cntx, IFloodlightProviderService.CONTEXT_PI_PAYLOAD);
         OFPort inOFPort = OFMessageUtils.getInPort((OFPacketIn) msg);
-        FlowControlsManager controlsManager = new FlowControlsManager(ovsSwitch, myFactory, eth, inOFPort);
+        FlowControlSetupManager controlsManager = new FlowControlSetupManager(ovsSwitch, myFactory, eth, inOFPort);
 
         try {
             // If it is an ethernet frame
@@ -97,12 +103,27 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
                 MacAddress dstMac = eth.getDestinationMACAddress();
                 IPv4Address srcIp = ipv4.getSourceAddress();
                 IPv4Address dstIp = ipv4.getDestinationAddress();
+                cienaFlowRepository.addInPortForIp(srcIp.toString(), inOFPort);
+                logger.info("\n\n##### Adding Port: [" + inOFPort.getPortNumber() + "] for " +
+                        "IP [" + srcIp.toString() + "]\n\n ");
 
                 // if it is a UDP Packet and its source is not the OVS SWITCH itself
                 if (ipv4.getProtocol() == IpProtocol.UDP && srcMac != switchMac) {
-                    boolean validUDPPacket = controlsManager.processReadyStateUDP(cienaFlowRepository, ipv4);
-                    if (validUDPPacket) {
-                        setupContainerSpecificTableEntries(controlsManager, srcIp);
+                    if (cienaFlowRepository.isIngressContainerIp(srcIp.toString())) {
+                        // if UDP packet from an ingress containers then notify end state
+                        String srcIpString = srcIp.toString();
+                        int tableId = cienaFlowRepository.getIpToTableIdMap().get(srcIpString);
+
+                        // TODO:: Strip down OVS flow controls
+                        FlowControlRemover fcRem = new FlowControlRemover(ovsSwitch, myFactory, eth, inOFPort);
+                        fcRem.processEventStatusUDP(cienaFlowRepository, tableId);
+
+                    } else {
+                        // if UDP packet from any intermediary containers then update ready state
+                        boolean validUDPPacket = controlsManager.processReadyStateUDP(cienaFlowRepository);
+                        if (validUDPPacket) {
+                            setupContainerSpecificTableEntries(controlsManager, srcIp);
+                        }
                     }
                 } else {
                     // if the incoming packet is between an Ingress (In or Out) and its neighbour
@@ -117,6 +138,7 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
                     } else if (srcMac.toString().equals(switchMac.toString()) ||
                             dstMac.toString().equals(switchMac.toString())) {
                         controlsManager.addAllowFlowsToAndFromOVS();
+
                     } else {
                         setupContainerSpecificTableEntries(controlsManager, srcIp);
                     }
@@ -128,8 +150,8 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
         return Command.CONTINUE;
     }
 
-    private void setupContainerSpecificTableEntries(FlowControlsManager controlsManager, IPv4Address srcIp){
-        int tableId = getFlowTableId(srcIp);
+    private void setupContainerSpecificTableEntries(FlowControlSetupManager controlsManager, IPv4Address srcIp) {
+        int tableId = cienaFlowRepository.getFlowTableId(srcIp);
         List<IPv4Address> neighbours = cienaFlowRepository.getNeighbourIps(srcIp);
         controlsManager.gotoContainerSpecificFlowTable(tableId);
         controlsManager.addAllowFlowToNeighbours(srcIp, tableId, neighbours);
@@ -137,44 +159,18 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
         controlsManager.dropAllOtherFlows(tableId);
     }
 
-
-    private int getFlowTableId(IPv4Address srcIp){
-        Integer tableId = ipToTableIdMap.get(srcIp.toString());
-        if (tableId == null) {
-            tableId = createNewTableEntryForIP(srcIp.toString());
+    static void respondToContainerManager(String topic, String responseToCM) {
+        try {
+            MqttConnectOptions options = new MqttConnectOptions();
+            options.setMqttVersion(MqttConnectOptions.MQTT_VERSION_3_1);
+            String clientId = MqttClient.generateClientId();
+            MqttClient mqttPublisherClient = new MqttClient(MQTT_BROKER_URI, clientId, new MemoryPersistence());
+            mqttPublisherClient.connect(options);
+            mqttPublisherClient.publish(topic, responseToCM.getBytes(UTF_8), 2, false);
+            mqttPublisherClient.disconnect();
+        } catch (MqttException | UnsupportedEncodingException e) {
+            e.printStackTrace();
         }
-        return tableId;
-    }
-
-    private int createNewTableEntryForIP(String ipAddress) {
-        //TODO:: Need to remove the table Ids later
-        int nextTableId = flowTableBits.nextClearBit(DEFAULT_FLOW_TABLE);
-        logger.info("New Table Id " + nextTableId + " for IP " + ipAddress);
-        flowTableBits.set(nextTableId);
-        ipToTableIdMap.put(ipAddress, nextTableId);
-        return nextTableId;
-    }
-
-    private void printDebugValues(Ethernet eth) {
-        IPv4 ipv4 = (IPv4) eth.getPayload();
-        MacAddress srcMac = eth.getSourceMACAddress();
-        MacAddress dstMac = eth.getDestinationMACAddress();
-        IPv4Address srcIp = ipv4.getSourceAddress();
-        IPv4Address dstIp = ipv4.getDestinationAddress();
-
-//        logger.info("########## OVS-SWITCH SOCKET ADD: " + ovsSocketAddress);
-//        logger.info("########## OVS-SWITCH INET ADDR: " + inetAddr);
-//        logger.info("########## OVS-SWITCH IPv4 ADDR: " + ovsIpv4);
-//        logger.info("########## TABLE-ID: " + inOFPort);
-//        logger.info("########## SWITCH-MAC: " + switchMac.toString());
-
-        logger.info("################ SOURCE: {} seen with IP: {}", srcMac, srcIp);
-        logger.info("################ DESTINATION: {} seen with IP: {}", dstMac, dstIp);
-        logger.info("----------------------------------------------------------------");
-    }
-
-    private void debugPrint(String line) {
-        logger.debug("########################### : " + line);
     }
 }
 

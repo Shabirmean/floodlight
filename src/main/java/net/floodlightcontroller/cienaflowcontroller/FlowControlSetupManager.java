@@ -1,6 +1,5 @@
 package net.floodlightcontroller.cienaflowcontroller;
 
-import io.netty.util.internal.ConcurrentSet;
 import net.floodlightcontroller.core.IOFSwitch;
 import net.floodlightcontroller.packet.Data;
 import net.floodlightcontroller.packet.Ethernet;
@@ -22,19 +21,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 
 import static net.floodlightcontroller.cienaflowcontroller.FlowControllerConstants.*;
 
 /**
  * Created by shabirmean on 2018-05-10 with some hope.
  */
-class FlowControlsManager {
-    protected static Logger logger = LoggerFactory.getLogger(FlowControlsManager.class);
-    private static final Set<String> readyStateReceived = new ConcurrentSet<>();
+class FlowControlSetupManager {
+    protected static Logger logger = LoggerFactory.getLogger(FlowControlSetupManager.class);
     private static final int EVENT_ID_INDEX = 0;
     private static final int CUSTOMER_INDEX = 1;
     private static final int HOSTNAME_INDEX = 2;
@@ -44,15 +39,16 @@ class FlowControlsManager {
     private Ethernet eth;
     private OFPort inOFPort;
 
-    FlowControlsManager(IOFSwitch ovsSwitch, OFFactory ofFactory, Ethernet eth, OFPort inOFPort) {
+    FlowControlSetupManager(IOFSwitch ovsSwitch, OFFactory ofFactory, Ethernet eth, OFPort inOFPort) {
         this.ovsSwitch = ovsSwitch;
         this.ofFactory = ofFactory;
         this.eth = eth;
         this.inOFPort = inOFPort;
     }
 
-    boolean processReadyStateUDP(FlowRepository cienaFlowRepository, IPv4 ipv4) {
-        logger.info("Processing received UDP Packet.");
+    boolean processReadyStateUDP(FlowRepository cienaFlowRepository) {
+        logger.info("[From intermediary container] Processing received UDP Packet.");
+        IPv4 ipv4 = (IPv4) eth.getPayload();
         IPv4Address srcIp = ipv4.getSourceAddress();
         UDP udp = (UDP) ipv4.getPayload();
         Data udpData = (Data) udp.getPayload();
@@ -60,7 +56,7 @@ class FlowControlsManager {
         String udpDataString = new String(udpDataBytes);
         String containerIp = srcIp.toString();
 
-        if (!readyStateReceived.contains(containerIp) && udpDataString.contains(CONTAINER_READY)) {
+        if (udpDataString.contains(CONTAINER_READY)) {
             logger.info("[UDP Packet with ready state] " + udpDataString);
             // "<EVENT_ID>:<CUSTOMER>:<HOSTNAME>:READY"
             String[] stringElements = udpDataString.split(COLON);
@@ -70,7 +66,6 @@ class FlowControlsManager {
 
             ReadyStateHolder readyCon = new ReadyStateHolder(eventId, customer, hostname, containerIp);
             cienaFlowRepository.addReadyStateContainer(readyCon);
-            readyStateReceived.add(containerIp);
             return true;
         }
         return false;
@@ -118,6 +113,7 @@ class FlowControlsManager {
     }
 
     void addAllowFlowsToAndFromOVS() {
+        //TODO:: Container Mac is not set correctly
         logger.info("Adding (OF) controls for packets TO and FROM the OVS (Switch)");
         IPv4 ipv4 = (IPv4) eth.getPayload();
         MacAddress srcMac = eth.getSourceMACAddress();
@@ -170,6 +166,7 @@ class FlowControlsManager {
 
         OFInstructions instructions = ofFactory.instructions();
         ArrayList<OFInstruction> gotoTableInstructionList = new ArrayList<>();
+
         OFInstructionGotoTable gotoTableInstruction =
                 instructions.buildGotoTable().setTableId(TableId.of(tableId)).build();
         gotoTableInstructionList.add(gotoTableInstruction);
@@ -229,7 +226,6 @@ class FlowControlsManager {
                 .setExact(MatchField.IPV4_SRC, srcIp)
                 .setExact(MatchField.ETH_SRC, srcMac)
                 .setExact(MatchField.ETH_DST, switchMac)
-//                .setExact(MatchField.IPV4_DST, IPv4Address.of("193.168.0.1"))
                 .setExact(MatchField.IN_PORT, inOFPort)
                 .setExact(MatchField.IP_PROTO, IpProtocol.UDP)
                 .build();
@@ -238,7 +234,6 @@ class FlowControlsManager {
         OFInstructions instructions = ofFactory.instructions();
         ArrayList<OFInstruction> normalFlowInstructionList = new ArrayList<>();
         ArrayList<OFAction> normalFlowActionList = new ArrayList<>();
-
         OFActionOutput normalFlowAction =
                 actions.buildOutput().setMaxLen(0xFFffFFff).setPort(OFPort.CONTROLLER).build();
         normalFlowActionList.add(normalFlowAction);

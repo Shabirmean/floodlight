@@ -8,13 +8,12 @@ import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 import org.projectfloodlight.openflow.types.IPv4Address;
+import org.projectfloodlight.openflow.types.OFPort;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static net.floodlightcontroller.cienaflowcontroller.FlowControllerConstants.*;
@@ -24,16 +23,25 @@ import static net.floodlightcontroller.cienaflowcontroller.FlowControllerConstan
  */
 public class FlowRepository implements MqttCallback {
     protected static Logger logger;
+    private static final int MAX_TABLE_IDS = 256;
 
     private final ConcurrentHashMap<String, CustomerEvent> eventIdToEventsMap = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, CustomerEvent> customerToEventsMap = new ConcurrentHashMap<>();
-    private final ConcurrentHashMap<String, CustomerEvent> subnetToEventsMap = new ConcurrentHashMap<>();
+//    private final ConcurrentHashMap<String, CustomerEvent> subnetToEventsMap = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, ArrayList<ReadyStateHolder>> evntsToReadyConMap = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, CustomerContainer> ipsToCustomerConMap = new ConcurrentHashMap<>();
+
+    private final ConcurrentHashMap<String, FlowControlRemover> flowControlsRemoverMap = new ConcurrentHashMap<>();
     private final ArrayList<String> ingressContainerIps = new ArrayList<>();
+
+    private final ConcurrentHashMap<String, Integer> ipToTableIdMap = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, OFPort> ipToOVSPortNumberMap = new ConcurrentHashMap<>();
+    private BitSet flowTableBits;
 
     FlowRepository() {
         logger = LoggerFactory.getLogger(FlowRepository.class);
+        this.flowTableBits = new BitSet(MAX_TABLE_IDS);
+        this.flowTableBits.set(DEFAULT_FLOW_TABLE);
     }
 
     @Override
@@ -47,9 +55,18 @@ public class FlowRepository implements MqttCallback {
         String messageIncoming = mqttMessage.toString();
         String eventIdentifier = topic.substring(topic.lastIndexOf(File.separator) + 1, topic.length());
         logger.info("Mqtt-Msg [" + topic + "] : [ " + messageIncoming + " ]");
-        new Thread(() -> {
-            processMessage(eventIdentifier, messageIncoming);
-        }).start();
+
+        if (messageIncoming.contains(FlowControllerConstants.REQUEST)) {
+            new Thread(() -> processMessage(eventIdentifier, messageIncoming)).start();
+
+        } else if (messageIncoming.contains(FlowControllerConstants.TERMINATE)) {
+            FlowControlRemover flRemover = flowControlsRemoverMap.get(eventIdentifier);
+            new Thread(() -> {
+                String customer = flRemover.getCustomer();
+                HashMap<String, Integer> eventIPsAndTableIds = cleanUpEventStructures(eventIdentifier, customer);
+                flRemover.clearOVSFlows(eventIPsAndTableIds, ipToOVSPortNumberMap);
+            }).start();
+        }
     }
 
     @Override
@@ -97,16 +114,30 @@ public class FlowRepository implements MqttCallback {
                     String isIngress = (String) containerObj.get(JSON_ATTRIB_IS_INGRESS);
                     String allowedFlows = (String) containerObj.get(JSON_ATTRIB_ALLOWED_FLOWS);
                     Boolean isIngressBool = Boolean.parseBoolean(isIngress);
-                    CustomerContainer cusContainer =
-                            new CustomerContainer(customer, cId, index, cName, ip, mac);
+
+                    CustomerContainer cusContainer = new CustomerContainer(customer, cId, index, cName, ip, mac);
                     cusContainer.setBorderContainer(isIngressBool);
                     cusContainer.setAllowedFlows(allowedFlows);
                     cusContainer.setEventId(eventId);
-                    containerList.add(cusContainer);
+
                     if (isIngressBool) {
-                        ingressContainerIps.add(ip);
+                        if (!ingressContainerIps.contains(ip)) {
+                            ingressContainerIps.add(ip);
+                        }
+
+                        IngressContainer ingressCusCon = (IngressContainer) ipsToCustomerConMap.get(ip);
+                        if (ingressCusCon == null) {
+                            ingressCusCon = new IngressContainer(cusContainer);
+                            ipsToCustomerConMap.put(ip, ingressCusCon);
+                        } else {
+                            ingressCusCon.addNewCustomerEvent(customer, eventId);
+                        }
+                        containerList.add(ingressCusCon);
+                        ipsToCustomerConMap.put(ip, ingressCusCon);
+                    } else {
+                        containerList.add(cusContainer);
+                        ipsToCustomerConMap.put(ip, cusContainer);
                     }
-                    ipsToCustomerConMap.put(ip, cusContainer);
                 }
 
                 synchronized (eventIdToEventsMap) {
@@ -119,7 +150,7 @@ public class FlowRepository implements MqttCallback {
 //                    newEvent.watchAndRespondToContainerManager();
                     eventIdToEventsMap.put(eventId, newEvent);
                     customerToEventsMap.put(customer, newEvent);
-                    subnetToEventsMap.put(subnet, newEvent);
+//                    subnetToEventsMap.put(subnet, newEvent);
                 }
             }
         } catch (ParseException e) {
@@ -148,6 +179,25 @@ public class FlowRepository implements MqttCallback {
         }
     }
 
+    private HashMap<String, Integer> cleanUpEventStructures(String eventId, String customer){
+        CustomerEvent event = eventIdToEventsMap.get(eventId);
+        customerToEventsMap.remove(customer);
+        evntsToReadyConMap.remove(eventId);
+
+        Enumeration<String> containerIpsOfEvent = event.getContainerIpsOfEvent();
+        HashMap<String, Integer> removedIPsToTableIdMap = new HashMap<>();
+        while (containerIpsOfEvent.hasMoreElements()) {
+            String ip = containerIpsOfEvent.nextElement();
+            if (!ingressContainerIps.contains(ip)) {
+                ipsToCustomerConMap.remove(ip);
+                int tableId = clearFlowTableBit(ip);
+                removedIPsToTableIdMap.put(ip, tableId);
+            }
+        }
+        eventIdToEventsMap.remove(eventId);
+        return removedIPsToTableIdMap;
+    }
+
     boolean isIngressContainerIp(String ipAddress) {
         return ingressContainerIps.contains(ipAddress);
     }
@@ -160,7 +210,18 @@ public class FlowRepository implements MqttCallback {
     private List<String> getNeighboursOfIngress() {
         List<String> listOfAllNeighbours = new ArrayList<>();
         for (String ingressIp : ingressContainerIps) {
-            listOfAllNeighbours.addAll(getNeighbourIps(ingressIp));
+            IngressContainer ingressCon = (IngressContainer) ipsToCustomerConMap.get(ingressIp);
+            Collection<String> eventsOfIngress = ingressCon.getCustomerToEventMap().values();
+
+            for (String eventId : eventsOfIngress) {
+                CustomerEvent cusEvent = eventIdToEventsMap.get(eventId);
+                List<String> neighbourConIdxs = getNeighbourContainerIdx(ingressIp);
+
+                for (String idx : neighbourConIdxs) {
+                    String ipAdd = cusEvent.getIpFromIndex(idx);
+                    listOfAllNeighbours.add(ipAdd);
+                }
+            }
         }
         return listOfAllNeighbours;
     }
@@ -171,7 +232,7 @@ public class FlowRepository implements MqttCallback {
         String eventId = customerContainer.getEventId();
         CustomerEvent customerEvent = eventIdToEventsMap.get(eventId);
 
-        List<String> neighbourIndexes = getNeighbourIps(ipAddress.toString());
+        List<String> neighbourIndexes = getNeighbourContainerIdx(ipAddress.toString());
         for (String indx : neighbourIndexes) {
             String ipAdd = customerEvent.getIpFromIndex(indx);
             adjacentIpAddresses.add(IPv4Address.of(ipAdd));
@@ -179,9 +240,47 @@ public class FlowRepository implements MqttCallback {
         return adjacentIpAddresses;
     }
 
-    private List<String> getNeighbourIps(String ipAddress) {
+    private List<String> getNeighbourContainerIdx(String ipAddress) {
         CustomerContainer customerContainer = ipsToCustomerConMap.get(ipAddress);
         String allowedFlows = customerContainer.getAllowedFlows();
         return Arrays.asList(allowedFlows.split("\\s*,\\s*"));
+    }
+
+    synchronized int getFlowTableId(IPv4Address srcIp){
+        Integer tableId = ipToTableIdMap.get(srcIp.toString());
+        if (tableId == null) {
+            tableId = createNewTableEntryForIP(srcIp.toString());
+        }
+        return tableId;
+    }
+
+    private int createNewTableEntryForIP(String ipAddress) {
+        //TODO:: Need to remove the table Ids later
+        int nextTableId = flowTableBits.nextClearBit(DEFAULT_FLOW_TABLE);
+        logger.info("New Table Id " + nextTableId + " for IP " + ipAddress);
+        flowTableBits.set(nextTableId);
+        ipToTableIdMap.put(ipAddress, nextTableId);
+        return nextTableId;
+    }
+
+    private synchronized int clearFlowTableBit(String ipAddress) {
+        int tableId = ipToTableIdMap.remove(ipAddress);
+        logger.info("Removing Table Id " + tableId + " for IP " + ipAddress);
+        flowTableBits.clear(tableId);
+        return tableId;
+    }
+
+    void addInPortForIp(String ipAddress, OFPort ovsPort){
+        if (!ipToOVSPortNumberMap.containsKey(ipAddress)) {
+            ipToOVSPortNumberMap.put(ipAddress, ovsPort);
+        }
+    }
+
+    ConcurrentHashMap<String, FlowControlRemover> getFlowControlsRemoverMap() {
+        return flowControlsRemoverMap;
+    }
+
+    ConcurrentHashMap<String, Integer> getIpToTableIdMap() {
+        return ipToTableIdMap;
     }
 }
