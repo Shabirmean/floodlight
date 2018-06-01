@@ -39,7 +39,6 @@ public class FlowControlRemover {
     private Ethernet eth;
     private OFPort inOFPort;
 
-    private int tableId;
     private String customer;
 
     FlowControlRemover(IOFSwitch ovsSwitch, OFFactory ofFactory, Ethernet eth, OFPort inOFPort) {
@@ -49,7 +48,7 @@ public class FlowControlRemover {
         this.inOFPort = inOFPort;
     }
 
-    void processEventStatusUDP(FlowRepository cienaFlowRepository, int tableId) {
+    void processEventStatusUDP(FlowRepository cienaFlowRepository) {
         logger.info("[From an ingress container] Processing received UDP Packet.");
         IPv4 ipv4 = (IPv4) eth.getPayload();
         UDP udp = (UDP) ipv4.getPayload();
@@ -64,7 +63,6 @@ public class FlowControlRemover {
         String responseString = String.format(RESPONSE_MSG_FORMAT_TERMINATE, eventId, udpDataString);
         FlowController.respondToContainerManager(MQTT_PUBLISH_TERMINATE, responseString);
 
-        this.tableId = tableId;
         this.customer = customer;
         cienaFlowRepository.getFlowControlsRemoverMap().put(eventId, this);
     }

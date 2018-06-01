@@ -110,11 +110,10 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
                     if (cienaFlowRepository.isIngressContainerIp(srcIp.toString())) {
                         // if UDP packet from an ingress containers then notify end state
                         String srcIpString = srcIp.toString();
-                        int tableId = cienaFlowRepository.getIpToTableIdMap().get(srcIpString);
 
                         // TODO:: Strip down OVS flow controls
                         FlowControlRemover fcRem = new FlowControlRemover(ovsSwitch, myFactory, eth, inOFPort);
-                        fcRem.processEventStatusUDP(cienaFlowRepository, tableId);
+                        fcRem.processEventStatusUDP(cienaFlowRepository);
 
                     } else {
                         // if UDP packet from any intermediary containers then update ready state
