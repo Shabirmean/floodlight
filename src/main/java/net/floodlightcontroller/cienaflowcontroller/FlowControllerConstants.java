@@ -29,7 +29,7 @@ class FlowControllerConstants {
     static final String MQTT_PUBLISH_EXEC = CIENA + SEP + "cmanager" + SEP + FMANAGER_CMANAGER + SEP + EXEC;
     static final String MQTT_PUBLISH_READY = CIENA + SEP + "cmanager" + SEP + FMANAGER_CMANAGER + SEP + RESPONSE;
     static final String MQTT_PUBLISH_TERMINATE = CIENA + SEP + "cmanager" + SEP + FMANAGER_CMANAGER + SEP + TERMINATE;
-    static final String RESPONSE_MSG_FORMAT_READY = "{\"eventId\":\"%s\",\"status\":\"%s\",\"msg\":\"%s\"}";
+    static final String RESPONSE_MSG_FORMAT_READY = "{\"eventId\":\"%s\",\"status\":%s,\"msg\":\"%s\"}";
     static final String RESPONSE_MSG_FORMAT_TERMINATE = "{\"eventId\":\"%s\",\"msg\":\"%s\"}";
 
     static final String JSON_ATTRIB_CUSTOMER = "customer";
