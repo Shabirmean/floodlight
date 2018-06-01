@@ -120,21 +120,26 @@ public class FlowRepository implements MqttCallback {
                     cusContainer.setAllowedFlows(allowedFlows);
                     cusContainer.setEventId(eventId);
 
+                    logger.info("+++++++++++ IP IS [" + ip + "] and isIngress [" + isIngress + "]");
                     if (isIngressBool) {
+                        logger.info("++++++++++ In here for [" + ip + "]");
                         if (!ingressContainerIps.contains(ip)) {
                             ingressContainerIps.add(ip);
                         }
 
                         IngressContainer ingressCusCon = (IngressContainer) ipsToCustomerConMap.get(ip);
                         if (ingressCusCon == null) {
+                            logger.info("++++++++++ In was NULL here for [" + ip + "]");
                             ingressCusCon = new IngressContainer(cusContainer);
                             ipsToCustomerConMap.put(ip, ingressCusCon);
                         } else {
+                            logger.info("++++++++++ In was NOTNULL here for [" + ip + "]");
                             ingressCusCon.addNewCustomerEvent(customer, eventId);
                         }
                         containerList.add(ingressCusCon);
                         ipsToCustomerConMap.put(ip, ingressCusCon);
                     } else {
+                        logger.info("++++++++++ Out here for [" + ip + "]");
                         containerList.add(cusContainer);
                         ipsToCustomerConMap.put(ip, cusContainer);
                     }
