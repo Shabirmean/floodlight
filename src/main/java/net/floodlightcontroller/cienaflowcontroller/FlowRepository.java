@@ -56,11 +56,10 @@ public class FlowRepository implements MqttCallback {
         String eventIdentifier = topic.substring(topic.lastIndexOf(File.separator) + 1, topic.length());
         logger.info("Mqtt-Msg [" + topic + "] : [ " + messageIncoming + " ]");
 
-        if (messageIncoming.contains(FlowControllerConstants.REQUEST)) {
-            logger.info("IN HERE TOOO");
+        if (topic.contains(FlowControllerConstants.REQUEST)) {
             new Thread(() -> processMessage(eventIdentifier, messageIncoming)).start();
 
-        } else if (messageIncoming.contains(FlowControllerConstants.TERMINATE)) {
+        } else if (topic.contains(FlowControllerConstants.TERMINATE)) {
             FlowControlRemover flRemover = flowControlsRemoverMap.get(eventIdentifier);
             new Thread(() -> {
                 String customer = flRemover.getCustomer();
@@ -127,26 +126,21 @@ public class FlowRepository implements MqttCallback {
                     cusContainer.setAllowedFlows(allowedFlows);
                     cusContainer.setEventId(eventId);
 
-                    logger.info("+++++++++++ IP IS [" + ip + "] and isIngress [" + isIngress + "]");
                     if (isIngressBool) {
-                        logger.info("++++++++++ In here for [" + ip + "]");
                         if (!ingressContainerIps.contains(ip)) {
                             ingressContainerIps.add(ip);
                         }
 
                         IngressContainer ingressCusCon = (IngressContainer) ipsToCustomerConMap.get(ip);
                         if (ingressCusCon == null) {
-                            logger.info("++++++++++ In was NULL here for [" + ip + "]");
                             ingressCusCon = new IngressContainer(cusContainer);
                             ipsToCustomerConMap.put(ip, ingressCusCon);
                         } else {
-                            logger.info("++++++++++ In was NOTNULL here for [" + ip + "]");
                             ingressCusCon.addNewCustomerEvent(customer, eventId);
                         }
                         containerList.add(ingressCusCon);
                         ipsToCustomerConMap.put(ip, ingressCusCon);
                     } else {
-                        logger.info("++++++++++ Out here for [" + ip + "]");
                         containerList.add(cusContainer);
                         ipsToCustomerConMap.put(ip, cusContainer);
                     }
@@ -164,15 +158,13 @@ public class FlowRepository implements MqttCallback {
                     customerToEventsMap.put(customer, newEvent);
 //                    subnetToEventsMap.put(subnet, newEvent);
                 }
-                responseString = String.format(
-                        RESPONSE_MSG_FORMAT_READY, eventIdentifier, "true", "SUCCESS");
+                responseString = String.format(RESPONSE_MSG_FORMAT_READY, eventIdentifier, "true", "SUCCESS");
             }
 
         } catch (ParseException e) {
             //TODO:: Handle exceptions correctly
             e.printStackTrace();
-            responseString = String.format(
-                    RESPONSE_MSG_FORMAT_READY, eventIdentifier, "false", e.getMessage());
+            responseString = String.format(RESPONSE_MSG_FORMAT_READY, eventIdentifier, "false", e.getMessage());
         }
         FlowController.respondToContainerManager(MQTT_PUBLISH_EXEC, responseString);
     }
