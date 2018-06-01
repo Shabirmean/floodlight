@@ -77,7 +77,7 @@ public class CustomerEvent {
                 if (areAllReady(containerStates)) {
                     logger.info("+++++++++++ ALL ARE READY +++++++++++++");
 //                    String responseString = String.format(RESPONSE_MSG_FORMAT_READY, eventId, setupStatus);
-                    String responseString = String.format(RESPONSE_MSG_FORMAT_READY, eventId, "true");
+                    String responseString = String.format(RESPONSE_MSG_FORMAT_READY, eventId, "true", "");
                     FlowController.respondToContainerManager(MQTT_PUBLISH_READY, responseString);
                 }
             }

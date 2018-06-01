@@ -11,6 +11,7 @@ class FlowControllerConstants {
     private static final String CMANAGER_FMANAGER = "cm_fm";
     private static final String FMANAGER_CMANAGER = "fm_cm";
     private static final String RESPONSE = "response";
+    private static final String EXEC = "exec";
 
     public static final String PERIOD = ".";
     public static final String ZERO = "0";
@@ -25,9 +26,10 @@ class FlowControllerConstants {
     static final String CONTAINER_READY = "READY";
     static final String MQTT_BROKER_URI = "tcp://localhost:1883";
     static final String MQTT_SUBSCRIBE_TOPIC = CIENA + SEP + CMANAGER_FMANAGER + SEP + REQUEST + SEP + "+";
+    static final String MQTT_PUBLISH_EXEC = CIENA + SEP + "cmanager" + SEP + FMANAGER_CMANAGER + SEP + EXEC;
     static final String MQTT_PUBLISH_READY = CIENA + SEP + "cmanager" + SEP + FMANAGER_CMANAGER + SEP + RESPONSE;
     static final String MQTT_PUBLISH_TERMINATE = CIENA + SEP + "cmanager" + SEP + FMANAGER_CMANAGER + SEP + TERMINATE;
-    static final String RESPONSE_MSG_FORMAT_READY = "{\"eventId\":\"%s\",\"status\":\"%s\"}";
+    static final String RESPONSE_MSG_FORMAT_READY = "{\"eventId\":\"%s\",\"status\":\"%s\",\"msg\":\"%s\"}";
     static final String RESPONSE_MSG_FORMAT_TERMINATE = "{\"eventId\":\"%s\",\"msg\":\"%s\"}";
 
     static final String JSON_ATTRIB_CUSTOMER = "customer";

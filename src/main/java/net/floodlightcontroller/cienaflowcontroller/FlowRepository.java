@@ -76,6 +76,7 @@ public class FlowRepository implements MqttCallback {
 
     private void processMessage(String eventIdentifier, String message) {
         CustomerEvent newEvent;
+        String responseString = String.format(RESPONSE_MSG_FORMAT_READY, eventIdentifier, "false", "UNEXPECTED-ERROR");
         try {
             JSONParser parser = new JSONParser();
             Object obj = parser.parse(message);
@@ -86,6 +87,8 @@ public class FlowRepository implements MqttCallback {
             if (customerToEventsMap.get(customer) != null) {
                 //TODO:: Indicates an existing flow for the customer
                 logger.error("Container map for customer-" + customer + " already exists. Discarding this call");
+                responseString = String.format(
+                        RESPONSE_MSG_FORMAT_READY, eventIdentifier, "false", "FLOW-EXISTS-FOR-CUSTOMER-ERROR");
             }
 
             ArrayList<CustomerContainer> containerList = new ArrayList<>();
@@ -94,15 +97,18 @@ public class FlowRepository implements MqttCallback {
 
             if (!eventId.equals(eventIdentifier)) {
                 //TODO:: Mismatch needs to handle the case
-                logger.error("The event-id [" + eventId + "] on the message does not match the if on the MQTT-topic.");
+                logger.error("The event-id [" + eventId + "] on the message does not match the one on the MQTT-topic.");
+                responseString = String.format(
+                        RESPONSE_MSG_FORMAT_READY, eventIdentifier, "false", "EVENT-IDS-MISMATCH-ERROR");
             }
             int count = Integer.parseInt((String) jsonObject.get(JSON_ATTRIB_COUNT));
             JSONArray containers = (JSONArray) jsonObject.get(JSON_ATTRIB_CONTAINERS);
 
             if (containers.size() != count) {
+                //TODO:: Separate out all error messages
                 logger.warn("Container count and meta-info count does not match for newly received information.");
-                //TODO:: Indicates an existing flow for the customer
-
+                responseString = String.format(
+                        RESPONSE_MSG_FORMAT_READY, eventIdentifier, "false", "CONTAINER-COUNT-ERROR");
             } else {
                 for (Object container : containers) {
                     JSONObject containerObj = (JSONObject) container;
@@ -157,11 +163,17 @@ public class FlowRepository implements MqttCallback {
                     customerToEventsMap.put(customer, newEvent);
 //                    subnetToEventsMap.put(subnet, newEvent);
                 }
+                responseString = String.format(
+                        RESPONSE_MSG_FORMAT_READY, eventIdentifier, "true", "SUCCESS");
             }
+
         } catch (ParseException e) {
             //TODO:: Handle exceptions correctly
             e.printStackTrace();
+            responseString = String.format(
+                    RESPONSE_MSG_FORMAT_READY, eventIdentifier, "false", e.getMessage());
         }
+        FlowController.respondToContainerManager(MQTT_PUBLISH_EXEC, responseString);
     }
 
     void addReadyStateContainer(ReadyStateHolder readyContainer) {

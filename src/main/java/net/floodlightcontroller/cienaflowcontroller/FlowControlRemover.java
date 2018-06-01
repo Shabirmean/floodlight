@@ -21,12 +21,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
-import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static net.floodlightcontroller.cienaflowcontroller.FlowControllerConstants.*;
-import static net.floodlightcontroller.cienaflowcontroller.FlowControllerConstants.MQTT_PUBLISH_TERMINATE;
 
 /**
  * Created by shabirmean on 2018-05-30 with some hope.
