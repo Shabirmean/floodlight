@@ -104,8 +104,6 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
                 IPv4Address srcIp = ipv4.getSourceAddress();
                 IPv4Address dstIp = ipv4.getDestinationAddress();
                 cienaFlowRepository.addInPortForIp(srcIp.toString(), inOFPort);
-                logger.info("\n\n##### Adding Port: [" + inOFPort.getPortNumber() + "] for " +
-                        "IP [" + srcIp.toString() + "]\n\n ");
 
                 // if it is a UDP Packet and its source is not the OVS SWITCH itself
                 if (ipv4.getProtocol() == IpProtocol.UDP && srcMac != switchMac) {
