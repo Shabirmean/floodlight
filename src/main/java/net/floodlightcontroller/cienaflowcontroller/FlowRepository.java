@@ -57,6 +57,7 @@ public class FlowRepository implements MqttCallback {
         logger.info("Mqtt-Msg [" + topic + "] : [ " + messageIncoming + " ]");
 
         if (messageIncoming.contains(FlowControllerConstants.REQUEST)) {
+            logger.info("IN HERE TOOO");
             new Thread(() -> processMessage(eventIdentifier, messageIncoming)).start();
 
         } else if (messageIncoming.contains(FlowControllerConstants.TERMINATE)) {
@@ -76,7 +77,7 @@ public class FlowRepository implements MqttCallback {
 
     private void processMessage(String eventIdentifier, String message) {
         CustomerEvent newEvent;
-        String responseString = String.format(RESPONSE_MSG_FORMAT_READY, eventIdentifier, "false", "UNEXPECTED-ERROR");
+        String responseString;
         try {
             JSONParser parser = new JSONParser();
             Object obj = parser.parse(message);
