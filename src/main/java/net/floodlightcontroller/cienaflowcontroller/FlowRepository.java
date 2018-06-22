@@ -63,8 +63,8 @@ public class FlowRepository implements MqttCallback {
             FlowControlRemover flRemover = flowControlsRemoverMap.get(eventIdentifier);
             new Thread(() -> {
                 String customer = flRemover.getCustomer();
-                HashMap<String, Integer> eventIPsAndTableIds = cleanUpEventStructures(eventIdentifier, customer);
-                flRemover.clearOVSFlows(eventIPsAndTableIds, ipToOVSPortNumberMap);
+//                HashMap<String, Integer> eventIPsAndTableIds = cleanUpEventStructures(eventIdentifier, customer);
+//                flRemover.clearOVSFlows(eventIPsAndTableIds, ipToOVSPortNumberMap);
             }).start();
         }
     }
