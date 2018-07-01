@@ -299,8 +299,8 @@ public class FlowRepository implements MqttCallback {
         if (customerContainer != null) {
             String eventId = customerContainer.getEventId();
             FlowControlRemover flRem = flowControlsRemoverMap.get(eventId);
-            logger.info(">>>>>>>>>>>>>>> FLREMOVER FOUND <<<<<<<<<<<<<<<<<<<<< [" + ipAddress + "]");
             if (flRem != null) {
+                logger.info(">>>>>>>>>>>>>>> FLREMOVER FOUND <<<<<<<<<<<<<<<<<<<<< [" + ipAddress + "]");
                 return flRem.isTerminated();
             }
         }

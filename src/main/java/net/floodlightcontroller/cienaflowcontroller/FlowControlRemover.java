@@ -73,7 +73,7 @@ public class FlowControlRemover {
         logger.info(">>>>>>>>>>>>>>> Setting termination state to TRUE <<<<<<<<<<<<<<<<<<<<<");
         this.eventIPsAndTableIds = eventIPsAndTableIds;
         this.ipsToOVSPortsMap = ipsToOVSPortsMap;
-        this.clearOVSFlows(this.ovsSwitch);
+//        this.clearOVSFlows(this.ovsSwitch);
         this.isTerminated = true;
     }
 
