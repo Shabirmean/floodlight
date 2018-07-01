@@ -73,6 +73,7 @@ public class FlowRepository implements MqttCallback {
 
         } else if (topic.contains(FlowControllerConstants.TERMINATE)) {
 //            FlowControlRemover flRemover = flowControlsRemoverMap.get(eventIdentifier);
+            logger.info("@@@@@@@@@@@@@@@ @@@@@ HERE *******************");
             triggerFowDeletion("DELETE_FLOWS:" + eventIdentifier);
 //            new Thread(() -> {
 //                String customer = flRemover.getCustomer();
