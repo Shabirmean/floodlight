@@ -64,11 +64,12 @@ public class FlowControlRemover {
         this.customer = stringElements[CUSTOMER_INDEX];
         cienaFlowRepository.getFlowControlsRemoverMap().put(eventId, this);
 
-        HashMap<String, Integer> eventIPsAndTableIds = cienaFlowRepository.cleanUpEventStructures(eventId, customer);
-        setStructuresForFlowDeletion(eventIPsAndTableIds, cienaFlowRepository.getIpToOVSPortNumberMap());
-
         String responseString = String.format(RESPONSE_MSG_FORMAT_TERMINATE, eventId, udpDataString);
         FlowController.respondToContainerManager(MQTT_PUBLISH_TERMINATE, responseString);
+
+//        HashMap<String, Integer> eventIPsAndTableIds = cienaFlowRepository.cleanUpEventStructures(eventId, customer);
+//        setStructuresForFlowDeletion(eventIPsAndTableIds, cienaFlowRepository.getIpToOVSPortNumberMap());
+
     }
 
     void setStructuresForFlowDeletion(HashMap<String, Integer> eventIPsAndTableIds,
@@ -76,7 +77,7 @@ public class FlowControlRemover {
         logger.info(">>>>>>>>>>>>>>> Setting termination state to TRUE <<<<<<<<<<<<<<<<<<<<<");
         this.eventIPsAndTableIds = eventIPsAndTableIds;
         this.ipsToOVSPortsMap = ipsToOVSPortsMap;
-        this.clearOVSFlows(this.ovsSwitch);
+//        this.clearOVSFlows(this.ovsSwitch);
 //        this.isTerminated = true;
     }
 

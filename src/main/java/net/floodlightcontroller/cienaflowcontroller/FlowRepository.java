@@ -15,8 +15,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.IOException;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ThreadLocalRandom;
 
 import static net.floodlightcontroller.cienaflowcontroller.FlowControllerConstants.*;
 
@@ -67,12 +72,33 @@ public class FlowRepository implements MqttCallback {
             new Thread(() -> processMessage(eventIdentifier, messageIncoming)).start();
 
         } else if (topic.contains(FlowControllerConstants.TERMINATE)) {
-            FlowControlRemover flRemover = flowControlsRemoverMap.get(eventIdentifier);
+//            FlowControlRemover flRemover = flowControlsRemoverMap.get(eventIdentifier);
+            triggerFowDeletion("DELETE_FLOWS:" + eventIdentifier);
 //            new Thread(() -> {
 //                String customer = flRemover.getCustomer();
 //                HashMap<String, Integer> eventIPsAndTableIds = cleanUpEventStructures(eventIdentifier, customer);
 //                flRemover.setStructuresForFlowDeletion(eventIPsAndTableIds, ipToOVSPortNumberMap);
 //            }).start();
+        }
+    }
+
+    private static final int MIN_PORT_VAL = 10000;
+    private static final int MAX_PORT_VAL = 65000;
+
+    private void triggerFowDeletion(String updateMsg) {
+        try {
+            String ovsIp = "193.168.0.1";
+            InetAddress address = InetAddress.getByName(ovsIp);
+
+            int ovsPort = ThreadLocalRandom.current().nextInt(MIN_PORT_VAL, MAX_PORT_VAL);
+            byte[] buf = updateMsg.getBytes();
+
+            DatagramPacket packet = new DatagramPacket(buf, buf.length, address, ovsPort);
+            DatagramSocket dgramSocket = new DatagramSocket();
+            dgramSocket.send(packet);
+
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 

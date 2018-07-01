@@ -8,8 +8,10 @@ import net.floodlightcontroller.core.module.FloodlightModuleContext;
 import net.floodlightcontroller.core.module.FloodlightModuleException;
 import net.floodlightcontroller.core.module.IFloodlightModule;
 import net.floodlightcontroller.core.module.IFloodlightService;
+import net.floodlightcontroller.packet.Data;
 import net.floodlightcontroller.packet.Ethernet;
 import net.floodlightcontroller.packet.IPv4;
+import net.floodlightcontroller.packet.UDP;
 import net.floodlightcontroller.util.OFMessageUtils;
 import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
@@ -21,10 +23,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.UnsupportedEncodingException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static net.floodlightcontroller.cienaflowcontroller.FlowControllerConstants.MQTT_BROKER_URI;
 import static net.floodlightcontroller.cienaflowcontroller.FlowControllerConstants.MQTT_SUBSCRIBE_TOPIC;
@@ -131,6 +130,22 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
                             setupContainerSpecificTableEntries(controlsManager, srcIp);
                         }
                     }
+                } else if (ipv4.getProtocol() == IpProtocol.UDP ) {
+                    UDP udp = (UDP) ipv4.getPayload();
+                    Data udpData = (Data) udp.getPayload();
+                    byte[] udpDataBytes = udpData.getData();
+                    String udpDataString = new String(udpDataBytes);
+                    logger.info("++++++++ >>>> SRC: " + srcIp + ", DST: " + dstIp + ", Item-" + udpDataString);
+
+                    if (udpDataString.contains("DELETE_FLOWS")) {
+                        String eventId = udpDataString.split(":")[1];
+                        FlowControlRemover flRem = cienaFlowRepository.getFlowControlsRemoverMap().get(eventId);
+                        HashMap<String, Integer> eventIPsAndTableIds =
+                                cienaFlowRepository.cleanUpEventStructures(eventId, flRem.getCustomer());
+                        flRem.setStructuresForFlowDeletion(eventIPsAndTableIds, cienaFlowRepository.getIpToOVSPortNumberMap());
+                        flRem.clearOVSFlows(ovsSwitch);
+                    }
+
                 } else {
                     // if the incoming packet is between an Ingress (In or Out) and its neighbour
                     if ((
