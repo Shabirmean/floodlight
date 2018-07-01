@@ -106,10 +106,10 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
                 cienaFlowRepository.addInPortForIp(srcIp.toString(), inOFPort);
 
                 if (cienaFlowRepository.isIPFromTerminatedFlow(srcIp)) {
-                    cienaFlowRepository.clearEventFlowsOfIP(ovsSwitch, myFactory, srcIp);
+                    cienaFlowRepository.clearEventFlowsOfIP(ovsSwitch, srcIp);
 
                 } else if (cienaFlowRepository.isIPFromTerminatedFlow(dstIp)) {
-                    cienaFlowRepository.clearEventFlowsOfIP(ovsSwitch, myFactory, dstIp);
+                    cienaFlowRepository.clearEventFlowsOfIP(ovsSwitch, dstIp);
 
                 } else if (ipv4.getProtocol() == IpProtocol.UDP && srcMac != switchMac) {
                     // if it is a UDP Packet and its source is not the OVS SWITCH itself
@@ -118,8 +118,8 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
                         String srcIpString = srcIp.toString();
 
                         // TODO:: Strip down OVS flow controls
-//                        FlowControlRemover fcRem = new FlowControlRemover(ovsSwitch, myFactory, eth);
-                        FlowControlRemover fcRem = new FlowControlRemover();
+                        FlowControlRemover fcRem = new FlowControlRemover(ovsSwitch, myFactory, eth);
+//                        FlowControlRemover fcRem = new FlowControlRemover();
                         fcRem.processEventStatusUDP(eth, cienaFlowRepository);
 
                     } else {

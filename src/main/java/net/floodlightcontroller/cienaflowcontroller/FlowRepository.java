@@ -299,17 +299,19 @@ public class FlowRepository implements MqttCallback {
         if (customerContainer != null) {
             String eventId = customerContainer.getEventId();
             FlowControlRemover flRem = flowControlsRemoverMap.get(eventId);
+            logger.info(">>>>>>>>>>>>>>> FLREMOVER FOUND <<<<<<<<<<<<<<<<<<<<< [" + ipAddress + "]");
             if (flRem != null) {
                 return flRem.isTerminated();
             }
         }
+        logger.info(">>>>>>>>>>>>>>> FLREMOVER NOT FOUND <<<<<<<<<<<<<<<<<<<<< [" + ipAddress + "]");
         return false;
     }
 
-    void clearEventFlowsOfIP(IOFSwitch ovsSwitch, OFFactory ofFactory, IPv4Address ipAddress){
+    void clearEventFlowsOfIP(IOFSwitch ovsSwitch, IPv4Address ipAddress){
         CustomerContainer customerContainer = ipsToCustomerConMap.get(ipAddress.toString());
         String eventId = customerContainer.getEventId();
         FlowControlRemover flRem = flowControlsRemoverMap.get(eventId);
-        flRem.clearOVSFlows(ovsSwitch, ofFactory);
+        flRem.clearOVSFlows(ovsSwitch);
     }
 }
