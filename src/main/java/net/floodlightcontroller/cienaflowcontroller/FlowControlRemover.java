@@ -35,19 +35,16 @@ public class FlowControlRemover {
     protected static Logger logger = LoggerFactory.getLogger(FlowControlRemover.class);
     private static final int EVENT_ID_INDEX = 0;
     private static final int CUSTOMER_INDEX = 1;
-
     private IOFSwitch ovsSwitch;
     private OFFactory ofFactory;
     private Ethernet eth;
-    private OFPort inOFPort;
 
     private String customer;
 
-    FlowControlRemover(IOFSwitch ovsSwitch, OFFactory ofFactory, Ethernet eth, OFPort inOFPort) {
+    FlowControlRemover(IOFSwitch ovsSwitch, OFFactory ofFactory, Ethernet eth) {
         this.ovsSwitch = ovsSwitch;
         this.ofFactory = ofFactory;
         this.eth = eth;
-        this.inOFPort = inOFPort;
     }
 
     void processEventStatusUDP(FlowRepository cienaFlowRepository) {
@@ -65,143 +62,44 @@ public class FlowControlRemover {
 
         String responseString = String.format(RESPONSE_MSG_FORMAT_TERMINATE, eventId, udpDataString);
         FlowController.respondToContainerManager(MQTT_PUBLISH_TERMINATE, responseString);
-
-
     }
-
 
     void clearOVSFlows(HashMap<String, Integer> eventIPsAndTableIds,
                        ConcurrentHashMap<String, OFPort> ipsToOVSPortsMap) {
-        MacAddress switchMac = ovsSwitch.getPort(OFPort.LOCAL).getHwAddr();
-        OFFlowDelete.Builder deleteBuilder = ofFactory.buildFlowDelete();
-
-        for (String ips : eventIPsAndTableIds.keySet()) {
-            System.out.println("IP: " + ips +
-                    ", TID: " + eventIPsAndTableIds.get(ips) +
-                    ", PID: " + ipsToOVSPortsMap.get(ips));
+        for (String containerIp : eventIPsAndTableIds.keySet()) {
+            int tableId = eventIPsAndTableIds.get(containerIp);
+            OFPort portId = ipsToOVSPortsMap.get(containerIp);
+            logger.info("IP: " + containerIp + ", TID: " + tableId + ", PID: " + portId);
+            deleteFlowByInPort(portId);
+            deleteFlowByDestinationIP(containerIp);
         }
         System.out.println("--------------------------------------------");
-
-        for (IOFConnection con : ovsSwitch.getConnections()) {
-            System.out.println("DatapathID: " + con.getDatapathId() + ", " +
-                            "LocalINETAdd: " + con.getLocalInetAddress() + ", " +
-                            "RemoteINETAdd: " + con.getRemoteInetAddress());
-        }
-        System.out.println("--------------------------------------------");
-
-
-//        ovsSwitch.getPorts()
-//
-//
-//        deleteFlowsWithIPAsSrc();
-//        deleteFlowsWithIPAsDst();
-//        deleteAllTableFlows();
-//
-//
-//
-//        deleteFlowsToIngressContainers();
-//        deleteFlowToAndFromOVS();
-//        deleteGotoTableFlow();
-//        deleteAllTableFlows();
-
     }
 
-    private void deleteFlowsToIngressContainers() {
-        logger.info("Deleting (OF) controls for packets between the Ingress Containers and their immediate neighbours");
-        IPv4 ipv4 = (IPv4) eth.getPayload();
-        MacAddress srcMac = eth.getSourceMACAddress();
-        MacAddress dstMac = eth.getDestinationMACAddress();
-        IPv4Address srcIp = ipv4.getSourceAddress();
-        IPv4Address dstIp = ipv4.getDestinationAddress();
-
+    private void deleteFlowByInPort(OFPort inPort) {
+        logger.info("Deleting (OF) controls for given OVS Port: " + inPort);
         //TODO:: NEED to check if its an entry container
-        Match ingressFlowMatch = ofFactory.buildMatch()
+        Match flowMatchByPort = ofFactory.buildMatch()
+                .setExact(MatchField.IN_PORT, inPort)
+                .build();
+        OFFlowDelete.Builder builder = ofFactory.buildFlowDelete();
+        OFFlowDelete deleteFlowWithPortId = builder.setMatch(flowMatchByPort).build();
+        ovsSwitch.write(deleteFlowWithPortId);
+    }
+
+    private void deleteFlowByDestinationIP(String ipAddress) {
+        logger.info("Deleting (OF) controls for given destination IP address: " + ipAddress);
+        //TODO:: NEED to check if its an entry container
+        Match flowMatchByDestinationIP = ofFactory.buildMatch()
                 .setExact(MatchField.ETH_TYPE, EthType.IPv4)
-                .setExact(MatchField.IPV4_SRC, srcIp)
-                .setExact(MatchField.ETH_SRC, srcMac)
-                .setExact(MatchField.ETH_DST, dstMac)
-                .setExact(MatchField.IPV4_DST, dstIp)
-                .setExact(MatchField.IN_PORT, inOFPort)
+                .setExact(MatchField.IPV4_DST, IPv4Address.of(ipAddress))
                 .build();
-
-        OFActions actions = ofFactory.actions();
-        OFInstructions instructions = ofFactory.instructions();
-        OFFlowAdd.Builder builder = ofFactory.buildFlowAdd();
-        ArrayList<OFInstruction> ingressFlowInstructionList = new ArrayList<>();
-        ArrayList<OFAction> ingressFlowActionList = new ArrayList<>();
-
-        OFActionOutput ingressFlowAction =
-                actions.buildOutput().setMaxLen(0xFFffFFff).setPort(OFPort.NORMAL).build();
-        ingressFlowActionList.add(ingressFlowAction);
-        OFInstructionApplyActions ingressFlowInstruction =
-                instructions.buildApplyActions().setActions(ingressFlowActionList).build();
-        ingressFlowInstructionList.add(ingressFlowInstruction);
-
-        OFFlowAdd allowIngressFlow = builder
-                .setBufferId(OFBufferId.NO_BUFFER)
-                .setPriority(MAX_PRIORITY)
-                .setMatch(ingressFlowMatch)
-                .setInstructions(ingressFlowInstructionList)
-                .setTableId(TableId.of(DEFAULT_FLOW_TABLE))
-                .build();
-        ovsSwitch.write(allowIngressFlow);
+        OFFlowDelete.Builder builder = ofFactory.buildFlowDelete();
+        OFFlowDelete deleteFlowWithDestinationIp = builder.setMatch(flowMatchByDestinationIP).build();
+        ovsSwitch.write(deleteFlowWithDestinationIp);
     }
 
     public String getCustomer() {
         return customer;
     }
-
-
 }
-
-
-//        OFFlowMod.Builder fmb = ovsSwitch.getOFFactory().buildFlowDelete();;
-//
-//
-//        MacAddress srcMac = eth.getSourceMACAddress();
-//        MacAddress dstMac = eth.getDestinationMACAddress();
-//        IPv4Address srcIp = ipv4.getSourceAddress();
-//        IPv4Address dstIp = ipv4.getDestinationAddress();
-//
-//        //TODO:: NEED to check if its an entry container
-//        Match deleteFlowMatch = ofFactory.buildMatch()
-//                .setExact(MatchField.ETH_TYPE, EthType.IPv4)
-//                .setExact(MatchField.IPV4_SRC, srcIp)
-//                .setExact(MatchField.ETH_SRC, srcMac)
-//                .setExact(MatchField.ETH_DST, dstMac)
-//                .setExact(MatchField.IPV4_DST, dstIp)
-//                .setExact(MatchField.IN_PORT, inOFPort)
-//                .build();
-//
-//
-//        fmb.setMatch(deleteFlowMatch);
-//        fmb.setBufferId(OFBufferId.NO_BUFFER);
-//        fmb.setPriority(MAX_PRIORITY);
-//        fmb.setTableId(TableId.of(DEFAULT_FLOW_TABLE));
-//        fmb.build();
-//        fmb.setOutPort(OFPort.ANY);
-//
-//
-//
-//        // set the ofp_action_header/out actions:
-//        // from the openflow 1.0 spec: need to set these on a struct ofp_action_output:
-//        // uint16_t type; /* OFPAT_OUTPUT. */
-//        // uint16_t len; /* Length is 8. */
-//        // uint16_t port; /* Output port. */
-//        // uint16_t max_len; /* Max length to send to controller. */
-//        // type/len are set because it is OFActionOutput,
-//        // and port, max_len are arguments to this constructor
-//        List<OFAction> al = new ArrayList<OFAction>();
-//        al.add(ovsSwitch.getOFFactory().actions().buildOutput().setPort(outPort).setMaxLen(0xffFFffFF).build());
-//
-//        FlowModUtils.setActions(fmb, al, sw);
-//
-//        if (log.isTraceEnabled()) {
-//            log.trace("{} {} flow mod {}",
-//                    new Object[]{ sw, (command == OFFlowModCommand.DELETE) ? "deleting" : "adding", fmb.build() });
-//        }
-//
-//        counterFlowMod.increment();
-//
-//        // and write it out
-//        sw.write(fmb.build());

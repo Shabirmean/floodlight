@@ -112,7 +112,7 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
                         String srcIpString = srcIp.toString();
 
                         // TODO:: Strip down OVS flow controls
-                        FlowControlRemover fcRem = new FlowControlRemover(ovsSwitch, myFactory, eth, inOFPort);
+                        FlowControlRemover fcRem = new FlowControlRemover(ovsSwitch, myFactory, eth);
                         fcRem.processEventStatusUDP(cienaFlowRepository);
 
                     } else {
