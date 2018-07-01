@@ -104,15 +104,18 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
                 IPv4Address dstIp = ipv4.getDestinationAddress();
                 cienaFlowRepository.addInPortForIp(srcIp.toString(), inOFPort);
 
-                if (cienaFlowRepository.isIPFromTerminatedFlow(srcIp)) {
-//                    cienaFlowRepository.clearEventFlowsOfIP(ovsSwitch, srcIp);
-                    return Command.CONTINUE;
+//                if (cienaFlowRepository.isIPFromTerminatedFlow(srcIp)) {
+////                    cienaFlowRepository.clearEventFlowsOfIP(ovsSwitch, srcIp);
+//                    return Command.CONTINUE;
+//
+//                } else if (cienaFlowRepository.isIPFromTerminatedFlow(dstIp)) {
+////                    cienaFlowRepository.clearEventFlowsOfIP(ovsSwitch, dstIp);
+//                    return Command.CONTINUE;
+//
+//                } else
 
-                } else if (cienaFlowRepository.isIPFromTerminatedFlow(dstIp)) {
-//                    cienaFlowRepository.clearEventFlowsOfIP(ovsSwitch, dstIp);
-                    return Command.CONTINUE;
 
-                } else if (ipv4.getProtocol() == IpProtocol.UDP && srcMac != switchMac) {
+                if (ipv4.getProtocol() == IpProtocol.UDP && srcMac != switchMac) {
                     // if it is a UDP Packet and its source is not the OVS SWITCH itself
                     if (cienaFlowRepository.isIngressContainerIp(srcIp.toString())) {
                         // if UDP packet from an ingress containers then notify end state
@@ -130,7 +133,7 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
                             setupContainerSpecificTableEntries(controlsManager, srcIp);
                         }
                     }
-                } else if (ipv4.getProtocol() == IpProtocol.UDP ) {
+                } else if (ipv4.getProtocol() == IpProtocol.UDP) {
                     UDP udp = (UDP) ipv4.getPayload();
                     Data udpData = (Data) udp.getPayload();
                     byte[] udpDataBytes = udpData.getData();
@@ -142,7 +145,8 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
                         FlowControlRemover flRem = cienaFlowRepository.getFlowControlsRemoverMap().get(eventId);
                         HashMap<String, Integer> eventIPsAndTableIds =
                                 cienaFlowRepository.cleanUpEventStructures(eventId, flRem.getCustomer());
-                        flRem.setStructuresForFlowDeletion(eventIPsAndTableIds, cienaFlowRepository.getIpToOVSPortNumberMap());
+                        flRem.setStructuresForFlowDeletion(eventIPsAndTableIds, cienaFlowRepository
+                                .getIpToOVSPortNumberMap());
                         flRem.clearOVSFlows(ovsSwitch);
                     }
 
