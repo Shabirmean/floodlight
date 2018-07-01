@@ -196,8 +196,9 @@ public class FlowRepository implements MqttCallback {
         }
     }
 
-    HashMap<String, Integer> cleanUpEventStructures(String eventId, String customer) {
-        CustomerEvent event = eventIdToEventsMap.get(eventId);
+    synchronized HashMap<String, Integer> cleanUpEventStructures(String eventId, String customer) {
+//        CustomerEvent event = eventIdToEventsMap.get(eventId);
+        CustomerEvent event = eventIdToEventsMap.remove(eventId);
         customerToEventsMap.remove(customer);
         evntsToReadyConMap.remove(eventId);
 
@@ -212,11 +213,12 @@ public class FlowRepository implements MqttCallback {
 //                int tableId = getFlowTableId(ip);
                 removedIPsToTableIdMap.put(ip, tableId);
             } else {
+                logger.info("############## Removing Customer from Ingress #################");
                 IngressContainer ingressCon = (IngressContainer) ipsToCustomerConMap.get(ip);
                 ingressCon.getCustomerToEventMap().remove(customer);
             }
         }
-        eventIdToEventsMap.remove(eventId);
+//        eventIdToEventsMap.remove(eventId);
         return removedIPsToTableIdMap;
     }
 
@@ -229,7 +231,7 @@ public class FlowRepository implements MqttCallback {
         return listOfIngressNeighbours.contains(ipAddress);
     }
 
-    private List<String> getNeighboursOfIngress() {
+    private synchronized List<String> getNeighboursOfIngress() {
         List<String> listOfAllNeighbours = new ArrayList<>();
         for (String ingressIp : ingressContainerIps) {
             IngressContainer ingressCon = (IngressContainer) ipsToCustomerConMap.get(ingressIp);
