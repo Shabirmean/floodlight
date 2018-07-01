@@ -159,10 +159,12 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
     private void setupContainerSpecificTableEntries(FlowControlSetupManager controlsManager, IPv4Address srcIp) {
         int tableId = cienaFlowRepository.getFlowTableId(srcIp);
         List<IPv4Address> neighbours = cienaFlowRepository.getNeighbourIps(srcIp);
-        controlsManager.gotoContainerSpecificFlowTable(tableId);
-        controlsManager.addAllowFlowToNeighbours(srcIp, tableId, neighbours);
-        controlsManager.allowUDPFlowsToOVS(tableId);
-        controlsManager.dropAllOtherFlows(tableId);
+        if (neighbours.size() != 0) {
+            controlsManager.gotoContainerSpecificFlowTable(tableId);
+            controlsManager.addAllowFlowToNeighbours(srcIp, tableId, neighbours);
+            controlsManager.allowUDPFlowsToOVS(tableId);
+            controlsManager.dropAllOtherFlows(tableId);
+        }
     }
 
     static void respondToContainerManager(String topic, String responseToCM) {

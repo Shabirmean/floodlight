@@ -222,11 +222,11 @@ public class FlowRepository implements MqttCallback {
         return removedIPsToTableIdMap;
     }
 
-    boolean isIngressContainerIp(String ipAddress) {
+    synchronized boolean isIngressContainerIp(String ipAddress) {
         return ingressContainerIps.contains(ipAddress);
     }
 
-    boolean isNeighbourOfIngress(String ipAddress) {
+    synchronized boolean isNeighbourOfIngress(String ipAddress) {
         List<String> listOfIngressNeighbours = getNeighboursOfIngress();
         return listOfIngressNeighbours.contains(ipAddress);
     }
@@ -250,16 +250,19 @@ public class FlowRepository implements MqttCallback {
         return listOfAllNeighbours;
     }
 
-    List<IPv4Address> getNeighbourIps(IPv4Address ipAddress) {
+    synchronized List<IPv4Address> getNeighbourIps(IPv4Address ipAddress) {
         List<IPv4Address> adjacentIpAddresses = new ArrayList<>();
         CustomerContainer customerContainer = ipsToCustomerConMap.get(ipAddress.toString());
-        String eventId = customerContainer.getEventId();
-        CustomerEvent customerEvent = eventIdToEventsMap.get(eventId);
 
-        List<String> neighbourIndexes = getNeighbourContainerIdx(ipAddress.toString());
-        for (String indx : neighbourIndexes) {
-            String ipAdd = customerEvent.getIpFromIndex(indx);
-            adjacentIpAddresses.add(IPv4Address.of(ipAdd));
+        if (customerContainer != null) {
+            String eventId = customerContainer.getEventId();
+            CustomerEvent customerEvent = eventIdToEventsMap.get(eventId);
+
+            List<String> neighbourIndexes = getNeighbourContainerIdx(ipAddress.toString());
+            for (String indx : neighbourIndexes) {
+                String ipAdd = customerEvent.getIpFromIndex(indx);
+                adjacentIpAddresses.add(IPv4Address.of(ipAdd));
+            }
         }
         return adjacentIpAddresses;
     }
