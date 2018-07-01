@@ -211,6 +211,9 @@ public class FlowRepository implements MqttCallback {
                 int tableId = clearFlowTableBit(ip);
 //                int tableId = getFlowTableId(ip);
                 removedIPsToTableIdMap.put(ip, tableId);
+            } else {
+                IngressContainer ingressCon = (IngressContainer) ipsToCustomerConMap.get(ip);
+                ingressCon.getCustomerToEventMap().remove(customer);
             }
         }
         eventIdToEventsMap.remove(eventId);
