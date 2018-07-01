@@ -1,5 +1,6 @@
 package net.floodlightcontroller.cienaflowcontroller;
 
+import net.floodlightcontroller.core.IOFConnection;
 import net.floodlightcontroller.core.IOFSwitch;
 import net.floodlightcontroller.packet.Data;
 import net.floodlightcontroller.packet.Ethernet;
@@ -8,6 +9,7 @@ import net.floodlightcontroller.packet.UDP;
 import org.projectfloodlight.openflow.protocol.OFFactory;
 import org.projectfloodlight.openflow.protocol.OFFlowAdd;
 import org.projectfloodlight.openflow.protocol.OFFlowDelete;
+import org.projectfloodlight.openflow.protocol.OFPortDesc;
 import org.projectfloodlight.openflow.protocol.action.OFAction;
 import org.projectfloodlight.openflow.protocol.action.OFActionOutput;
 import org.projectfloodlight.openflow.protocol.action.OFActions;
@@ -73,6 +75,21 @@ public class FlowControlRemover {
         MacAddress switchMac = ovsSwitch.getPort(OFPort.LOCAL).getHwAddr();
         OFFlowDelete.Builder deleteBuilder = ofFactory.buildFlowDelete();
 
+        for (String ips : eventIPsAndTableIds.keySet()) {
+            System.out.println("IP: " + ips +
+                    ", TID: " + eventIPsAndTableIds.get(ips) +
+                    ", PID: " + ipsToOVSPortsMap.get(ips));
+        }
+        System.out.println("--------------------------------------------");
+
+        for (IOFConnection con : ovsSwitch.getConnections()) {
+            System.out.println("DatapathID: " + con.getDatapathId() + ", " +
+                            "LocalINETAdd: " + con.getLocalInetAddress() + ", " +
+                            "RemoteINETAdd: " + con.getRemoteInetAddress());
+        }
+        System.out.println("--------------------------------------------");
+
+
 //        ovsSwitch.getPorts()
 //
 //
@@ -136,8 +153,6 @@ public class FlowControlRemover {
 
 
 }
-
-
 
 
 //        OFFlowMod.Builder fmb = ovsSwitch.getOFFactory().buildFlowDelete();;

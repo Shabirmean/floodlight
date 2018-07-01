@@ -63,8 +63,8 @@ public class FlowRepository implements MqttCallback {
             FlowControlRemover flRemover = flowControlsRemoverMap.get(eventIdentifier);
             new Thread(() -> {
                 String customer = flRemover.getCustomer();
-//                HashMap<String, Integer> eventIPsAndTableIds = cleanUpEventStructures(eventIdentifier, customer);
-//                flRemover.clearOVSFlows(eventIPsAndTableIds, ipToOVSPortNumberMap);
+                HashMap<String, Integer> eventIPsAndTableIds = cleanUpEventStructures(eventIdentifier, customer);
+                flRemover.clearOVSFlows(eventIPsAndTableIds, ipToOVSPortNumberMap);
             }).start();
         }
     }
@@ -199,12 +199,14 @@ public class FlowRepository implements MqttCallback {
         while (containerIpsOfEvent.hasMoreElements()) {
             String ip = containerIpsOfEvent.nextElement();
             if (!ingressContainerIps.contains(ip)) {
-                ipsToCustomerConMap.remove(ip);
-                int tableId = clearFlowTableBit(ip);
+                //TODO:: Must Uncomment for correct usage
+//                ipsToCustomerConMap.remove(ip);
+//                int tableId = clearFlowTableBit(ip);
+                int tableId = getFlowTableId(ip);
                 removedIPsToTableIdMap.put(ip, tableId);
             }
         }
-        eventIdToEventsMap.remove(eventId);
+//        eventIdToEventsMap.remove(eventId);
         return removedIPsToTableIdMap;
     }
 
@@ -279,6 +281,14 @@ public class FlowRepository implements MqttCallback {
         flowTableBits.clear(tableId);
         return tableId;
     }
+
+
+    private synchronized int getFlowTableId(String ipAddress) {
+        //TODO:: Delete method for correct usage
+        return ipToTableIdMap.get(ipAddress);
+    }
+
+
 
     void addInPortForIp(String ipAddress, OFPort ovsPort){
         if (!ipToOVSPortNumberMap.containsKey(ipAddress)) {
