@@ -37,6 +37,11 @@ public class FlowRepository implements MqttCallback {
     private final ArrayList<String> ingressContainerIps = new ArrayList<>();
 
     private final ConcurrentHashMap<String, Integer> ipToTableIdMap = new ConcurrentHashMap<>();
+
+    public ConcurrentHashMap<String, OFPort> getIpToOVSPortNumberMap() {
+        return ipToOVSPortNumberMap;
+    }
+
     private final ConcurrentHashMap<String, OFPort> ipToOVSPortNumberMap = new ConcurrentHashMap<>();
     private BitSet flowTableBits;
 
@@ -63,11 +68,11 @@ public class FlowRepository implements MqttCallback {
 
         } else if (topic.contains(FlowControllerConstants.TERMINATE)) {
             FlowControlRemover flRemover = flowControlsRemoverMap.get(eventIdentifier);
-            new Thread(() -> {
-                String customer = flRemover.getCustomer();
-                HashMap<String, Integer> eventIPsAndTableIds = cleanUpEventStructures(eventIdentifier, customer);
-                flRemover.setStructuresForFlowDeletion(eventIPsAndTableIds, ipToOVSPortNumberMap);
-            }).start();
+//            new Thread(() -> {
+//                String customer = flRemover.getCustomer();
+//                HashMap<String, Integer> eventIPsAndTableIds = cleanUpEventStructures(eventIdentifier, customer);
+//                flRemover.setStructuresForFlowDeletion(eventIPsAndTableIds, ipToOVSPortNumberMap);
+//            }).start();
         }
     }
 
@@ -191,7 +196,7 @@ public class FlowRepository implements MqttCallback {
         }
     }
 
-    private HashMap<String, Integer> cleanUpEventStructures(String eventId, String customer) {
+    HashMap<String, Integer> cleanUpEventStructures(String eventId, String customer) {
         CustomerEvent event = eventIdToEventsMap.get(eventId);
         customerToEventsMap.remove(customer);
         evntsToReadyConMap.remove(eventId);
@@ -301,7 +306,8 @@ public class FlowRepository implements MqttCallback {
             FlowControlRemover flRem = flowControlsRemoverMap.get(eventId);
             if (flRem != null) {
                 logger.info(">>>>>>>>>>>>>>> FLREMOVER FOUND <<<<<<<<<<<<<<<<<<<<< [" + ipAddress + "]");
-                return flRem.isTerminated();
+//                return flRem.isTerminated();
+                return true;
             }
         }
         logger.info(">>>>>>>>>>>>>>> FLREMOVER NOT FOUND <<<<<<<<<<<<<<<<<<<<< [" + ipAddress + "]");

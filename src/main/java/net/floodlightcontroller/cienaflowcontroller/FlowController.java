@@ -106,10 +106,12 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
                 cienaFlowRepository.addInPortForIp(srcIp.toString(), inOFPort);
 
                 if (cienaFlowRepository.isIPFromTerminatedFlow(srcIp)) {
-                    cienaFlowRepository.clearEventFlowsOfIP(ovsSwitch, srcIp);
+//                    cienaFlowRepository.clearEventFlowsOfIP(ovsSwitch, srcIp);
+                    return Command.CONTINUE;
 
                 } else if (cienaFlowRepository.isIPFromTerminatedFlow(dstIp)) {
-                    cienaFlowRepository.clearEventFlowsOfIP(ovsSwitch, dstIp);
+//                    cienaFlowRepository.clearEventFlowsOfIP(ovsSwitch, dstIp);
+                    return Command.CONTINUE;
 
                 } else if (ipv4.getProtocol() == IpProtocol.UDP && srcMac != switchMac) {
                     // if it is a UDP Packet and its source is not the OVS SWITCH itself
