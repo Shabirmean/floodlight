@@ -60,13 +60,13 @@ public class FlowControlRemover {
         String[] stringElements = udpDataString.split(COLON);
 
         String eventId = stringElements[EVENT_ID_INDEX];
-        String customer = stringElements[CUSTOMER_INDEX];
+        this.customer = stringElements[CUSTOMER_INDEX];
+        cienaFlowRepository.getFlowControlsRemoverMap().put(eventId, this);
 
         String responseString = String.format(RESPONSE_MSG_FORMAT_TERMINATE, eventId, udpDataString);
         FlowController.respondToContainerManager(MQTT_PUBLISH_TERMINATE, responseString);
 
-        this.customer = customer;
-        cienaFlowRepository.getFlowControlsRemoverMap().put(eventId, this);
+
     }
 
 
