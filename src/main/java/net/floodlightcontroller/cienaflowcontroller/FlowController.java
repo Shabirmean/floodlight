@@ -114,6 +114,14 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
 //
 //                } else
 
+                if (ipv4.getProtocol() == IpProtocol.UDP) {
+                    UDP udp = (UDP) ipv4.getPayload();
+                    Data udpData = (Data) udp.getPayload();
+                    byte[] udpDataBytes = udpData.getData();
+                    String udpDataString = new String(udpDataBytes);
+                    logger.info("++++++++ >>>> SRC: " + srcIp + ", DST: " + dstIp + ", Item-" + udpDataString);
+                }
+
 
                 if (ipv4.getProtocol() == IpProtocol.UDP && srcMac != switchMac) {
                     // if it is a UDP Packet and its source is not the OVS SWITCH itself
