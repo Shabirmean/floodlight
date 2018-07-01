@@ -105,15 +105,22 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
                 IPv4Address dstIp = ipv4.getDestinationAddress();
                 cienaFlowRepository.addInPortForIp(srcIp.toString(), inOFPort);
 
-                // if it is a UDP Packet and its source is not the OVS SWITCH itself
-                if (ipv4.getProtocol() == IpProtocol.UDP && srcMac != switchMac) {
+                if (cienaFlowRepository.isIPFromTerminatedFlow(srcIp)) {
+                    cienaFlowRepository.clearEventFlowsOfIP(ovsSwitch, myFactory, srcIp);
+
+                } else if (cienaFlowRepository.isIPFromTerminatedFlow(dstIp)) {
+                    cienaFlowRepository.clearEventFlowsOfIP(ovsSwitch, myFactory, dstIp);
+
+                } else if (ipv4.getProtocol() == IpProtocol.UDP && srcMac != switchMac) {
+                    // if it is a UDP Packet and its source is not the OVS SWITCH itself
                     if (cienaFlowRepository.isIngressContainerIp(srcIp.toString())) {
                         // if UDP packet from an ingress containers then notify end state
                         String srcIpString = srcIp.toString();
 
                         // TODO:: Strip down OVS flow controls
-                        FlowControlRemover fcRem = new FlowControlRemover(ovsSwitch, myFactory, eth);
-                        fcRem.processEventStatusUDP(cienaFlowRepository);
+//                        FlowControlRemover fcRem = new FlowControlRemover(ovsSwitch, myFactory, eth);
+                        FlowControlRemover fcRem = new FlowControlRemover();
+                        fcRem.processEventStatusUDP(eth, cienaFlowRepository);
 
                     } else {
                         // if UDP packet from any intermediary containers then update ready state

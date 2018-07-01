@@ -1,5 +1,6 @@
 package net.floodlightcontroller.cienaflowcontroller;
 
+import net.floodlightcontroller.core.IOFSwitch;
 import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
 import org.eclipse.paho.client.mqttv3.MqttCallback;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
@@ -7,6 +8,7 @@ import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
+import org.projectfloodlight.openflow.protocol.OFFactory;
 import org.projectfloodlight.openflow.types.IPv4Address;
 import org.projectfloodlight.openflow.types.OFPort;
 import org.slf4j.Logger;
@@ -27,7 +29,7 @@ public class FlowRepository implements MqttCallback {
 
     private final ConcurrentHashMap<String, CustomerEvent> eventIdToEventsMap = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, CustomerEvent> customerToEventsMap = new ConcurrentHashMap<>();
-//    private final ConcurrentHashMap<String, CustomerEvent> subnetToEventsMap = new ConcurrentHashMap<>();
+
     private final ConcurrentHashMap<String, ArrayList<ReadyStateHolder>> evntsToReadyConMap = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, CustomerContainer> ipsToCustomerConMap = new ConcurrentHashMap<>();
 
@@ -64,7 +66,7 @@ public class FlowRepository implements MqttCallback {
             new Thread(() -> {
                 String customer = flRemover.getCustomer();
                 HashMap<String, Integer> eventIPsAndTableIds = cleanUpEventStructures(eventIdentifier, customer);
-                flRemover.clearOVSFlows(eventIPsAndTableIds, ipToOVSPortNumberMap);
+                flRemover.setStructuresForFlowDeletion(eventIPsAndTableIds, ipToOVSPortNumberMap);
             }).start();
         }
     }
@@ -189,7 +191,7 @@ public class FlowRepository implements MqttCallback {
         }
     }
 
-    private HashMap<String, Integer> cleanUpEventStructures(String eventId, String customer){
+    private HashMap<String, Integer> cleanUpEventStructures(String eventId, String customer) {
         CustomerEvent event = eventIdToEventsMap.get(eventId);
         customerToEventsMap.remove(customer);
         evntsToReadyConMap.remove(eventId);
@@ -200,13 +202,13 @@ public class FlowRepository implements MqttCallback {
             String ip = containerIpsOfEvent.nextElement();
             if (!ingressContainerIps.contains(ip)) {
                 //TODO:: Must Uncomment for correct usage
-//                ipsToCustomerConMap.remove(ip);
-//                int tableId = clearFlowTableBit(ip);
-                int tableId = getFlowTableId(ip);
+                ipsToCustomerConMap.remove(ip);
+                int tableId = clearFlowTableBit(ip);
+//                int tableId = getFlowTableId(ip);
                 removedIPsToTableIdMap.put(ip, tableId);
             }
         }
-//        eventIdToEventsMap.remove(eventId);
+        eventIdToEventsMap.remove(eventId);
         return removedIPsToTableIdMap;
     }
 
@@ -258,7 +260,7 @@ public class FlowRepository implements MqttCallback {
         return Arrays.asList(allowedFlows.split("\\s*,\\s*"));
     }
 
-    synchronized int getFlowTableId(IPv4Address srcIp){
+    synchronized int getFlowTableId(IPv4Address srcIp) {
         Integer tableId = ipToTableIdMap.get(srcIp.toString());
         if (tableId == null) {
             tableId = createNewTableEntryForIP(srcIp.toString());
@@ -282,15 +284,7 @@ public class FlowRepository implements MqttCallback {
         return tableId;
     }
 
-
-    private synchronized int getFlowTableId(String ipAddress) {
-        //TODO:: Delete method for correct usage
-        return ipToTableIdMap.get(ipAddress);
-    }
-
-
-
-    void addInPortForIp(String ipAddress, OFPort ovsPort){
+    void addInPortForIp(String ipAddress, OFPort ovsPort) {
         if (!ipToOVSPortNumberMap.containsKey(ipAddress)) {
             ipToOVSPortNumberMap.put(ipAddress, ovsPort);
         }
@@ -300,7 +294,22 @@ public class FlowRepository implements MqttCallback {
         return flowControlsRemoverMap;
     }
 
-    ConcurrentHashMap<String, Integer> getIpToTableIdMap() {
-        return ipToTableIdMap;
+    boolean isIPFromTerminatedFlow(IPv4Address ipAddress) {
+        CustomerContainer customerContainer = ipsToCustomerConMap.get(ipAddress.toString());
+        if (customerContainer != null) {
+            String eventId = customerContainer.getEventId();
+            FlowControlRemover flRem = flowControlsRemoverMap.get(eventId);
+            if (flRem != null) {
+                return flRem.isTerminated();
+            }
+        }
+        return false;
+    }
+
+    void clearEventFlowsOfIP(IOFSwitch ovsSwitch, OFFactory ofFactory, IPv4Address ipAddress){
+        CustomerContainer customerContainer = ipsToCustomerConMap.get(ipAddress.toString());
+        String eventId = customerContainer.getEventId();
+        FlowControlRemover flRem = flowControlsRemoverMap.get(eventId);
+        flRem.clearOVSFlows(ovsSwitch, ofFactory);
     }
 }

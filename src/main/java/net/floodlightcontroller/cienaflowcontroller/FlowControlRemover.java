@@ -35,19 +35,23 @@ public class FlowControlRemover {
     protected static Logger logger = LoggerFactory.getLogger(FlowControlRemover.class);
     private static final int EVENT_ID_INDEX = 0;
     private static final int CUSTOMER_INDEX = 1;
-    private IOFSwitch ovsSwitch;
-    private OFFactory ofFactory;
-    private Ethernet eth;
+//    private IOFSwitch ovsSwitch;
+//    private OFFactory ofFactory;
+//    private Ethernet eth;
 
     private String customer;
+    private boolean isTerminated = false;
+    private HashMap<String, Integer> eventIPsAndTableIds;
+    private ConcurrentHashMap<String, OFPort> ipsToOVSPortsMap;
 
-    FlowControlRemover(IOFSwitch ovsSwitch, OFFactory ofFactory, Ethernet eth) {
-        this.ovsSwitch = ovsSwitch;
-        this.ofFactory = ofFactory;
-        this.eth = eth;
+    FlowControlRemover() {
+//    FlowControlRemover(IOFSwitch ovsSwitch, OFFactory ofFactory, Ethernet eth) {
+//        this.ovsSwitch = ovsSwitch;
+//        this.ofFactory = ofFactory;
+//        this.eth = eth;
     }
 
-    void processEventStatusUDP(FlowRepository cienaFlowRepository) {
+    void processEventStatusUDP(Ethernet eth, FlowRepository cienaFlowRepository) {
         logger.info("[From an ingress container] Processing received UDP Packet.");
         IPv4 ipv4 = (IPv4) eth.getPayload();
         UDP udp = (UDP) ipv4.getPayload();
@@ -64,19 +68,25 @@ public class FlowControlRemover {
         FlowController.respondToContainerManager(MQTT_PUBLISH_TERMINATE, responseString);
     }
 
-    void clearOVSFlows(HashMap<String, Integer> eventIPsAndTableIds,
-                       ConcurrentHashMap<String, OFPort> ipsToOVSPortsMap) {
+    void setStructuresForFlowDeletion(HashMap<String, Integer> eventIPsAndTableIds,
+                                      ConcurrentHashMap<String, OFPort> ipsToOVSPortsMap) {
+        this.eventIPsAndTableIds = eventIPsAndTableIds;
+        this.ipsToOVSPortsMap = ipsToOVSPortsMap;
+        this.isTerminated = true;
+    }
+
+    void clearOVSFlows(IOFSwitch ovsSwitch, OFFactory ofFactory) {
         for (String containerIp : eventIPsAndTableIds.keySet()) {
             int tableId = eventIPsAndTableIds.get(containerIp);
             OFPort portId = ipsToOVSPortsMap.get(containerIp);
             logger.info("IP: " + containerIp + ", TID: " + tableId + ", PID: " + portId);
-            deleteFlowByInPort(portId);
-            deleteFlowByDestinationIP(containerIp);
+            deleteFlowByInPort(ovsSwitch, ofFactory, portId);
+            deleteFlowByDestinationIP(ovsSwitch, ofFactory, containerIp);
         }
         System.out.println("--------------------------------------------");
     }
 
-    private void deleteFlowByInPort(OFPort inPort) {
+    private void deleteFlowByInPort(IOFSwitch ovsSwitch, OFFactory ofFactory, OFPort inPort) {
         logger.info("Deleting (OF) controls for given OVS Port: " + inPort);
         //TODO:: NEED to check if its an entry container
         Match flowMatchByPort = ofFactory.buildMatch()
@@ -87,7 +97,7 @@ public class FlowControlRemover {
         ovsSwitch.write(deleteFlowWithPortId);
     }
 
-    private void deleteFlowByDestinationIP(String ipAddress) {
+    private void deleteFlowByDestinationIP(IOFSwitch ovsSwitch, OFFactory ofFactory, String ipAddress) {
         logger.info("Deleting (OF) controls for given destination IP address: " + ipAddress);
         //TODO:: NEED to check if its an entry container
         Match flowMatchByDestinationIP = ofFactory.buildMatch()
@@ -101,5 +111,13 @@ public class FlowControlRemover {
 
     public String getCustomer() {
         return customer;
+    }
+
+    boolean isTerminated() {
+        return isTerminated;
+    }
+
+    public void setTerminated(boolean terminated) {
+        isTerminated = terminated;
     }
 }
