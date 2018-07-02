@@ -30,7 +30,7 @@ public class FlowControlRemover {
                        ConcurrentHashMap<String, OFPort> ipsToOVSPortsMap) {
         for (String containerIp : eventIPsAndTableIds.keySet()) {
             int tableId = eventIPsAndTableIds.get(containerIp);
-            OFPort portId = ipsToOVSPortsMap.get(containerIp);
+            OFPort portId = ipsToOVSPortsMap.remove(containerIp);
             logger.info("IP: " + containerIp + ", TID: " + tableId + ", PID: " + portId);
             deleteFlowByInPort(ovsSwitch, portId);
             deleteFlowByInTableId(ovsSwitch, tableId);
