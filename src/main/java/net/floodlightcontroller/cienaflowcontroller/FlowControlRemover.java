@@ -92,7 +92,7 @@ public class FlowControlRemover {
             int tableId = eventIPsAndTableIds.get(containerIp);
             OFPort portId = ipsToOVSPortsMap.get(containerIp);
             logger.info("IP: " + containerIp + ", TID: " + tableId + ", PID: " + portId);
-//            deleteFlowByInPort(ovsSwitch, portId);
+            deleteFlowByInPort(ovsSwitch, portId);
             deleteFlowByInTableId(ovsSwitch, tableId);
             deleteFlowByDestinationIP(ovsSwitch, containerIp);
             FlowController.deletedIpAddresses.add(containerIp);
@@ -104,10 +104,6 @@ public class FlowControlRemover {
         logger.info("Deleting (OF) controls for given OVS Flow table: " + tableId);
         //TODO:: NEED to check if its an entry container
         OFFactory ofFactory = ovsSwitch.getOFFactory();
-//        Match flowMatchByPort = ofFactory.buildMatch()
-//                .setExact(MatchField.IN_PORT, inPort)
-//                .build();
-
         OFFlowDelete.Builder builder = ofFactory.buildFlowDelete();
         OFFlowDelete deleteFlowWithPortId = builder.setTableId(TableId.of(tableId)).build();
         ovsSwitch.write(deleteFlowWithPortId);
