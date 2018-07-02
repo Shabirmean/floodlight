@@ -130,9 +130,10 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
                         String srcIpString = srcIp.toString();
 
                         // TODO:: Strip down OVS flow controls
-                        FlowControlRemover fcRem = new FlowControlRemover(ovsSwitch, myFactory, eth);
+//                        FlowControlRemover fcRem = new FlowControlRemover(ovsSwitch, myFactory, eth);
 //                        FlowControlRemover fcRem = new FlowControlRemover();
-                        fcRem.processEventStatusUDP(eth, cienaFlowRepository);
+//                        fcRem.processEventStatusUDP(eth, cienaFlowRepository);
+                        cienaFlowRepository.processEventStatusUDP(eth, ovsSwitch);
 
                     } else {
                         // if UDP packet from any intermediary containers then update ready state

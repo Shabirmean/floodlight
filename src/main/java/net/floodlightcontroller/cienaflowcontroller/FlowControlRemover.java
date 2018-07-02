@@ -33,44 +33,50 @@ import static net.floodlightcontroller.cienaflowcontroller.FlowControllerConstan
  */
 public class FlowControlRemover {
     protected static Logger logger = LoggerFactory.getLogger(FlowControlRemover.class);
-    private static final int EVENT_ID_INDEX = 0;
-    private static final int CUSTOMER_INDEX = 1;
-    private IOFSwitch ovsSwitch;
-    private OFFactory ofFactory;
-    private Ethernet eth;
+//    private static final int EVENT_ID_INDEX = 0;
+//    private static final int CUSTOMER_INDEX = 1;
+//    private IOFSwitch ovsSwitch;
+//    private OFFactory ofFactory;
+//    private Ethernet eth;
 
     private String customer;
+//    private String eventId;
     private boolean isTerminated = false;
     private HashMap<String, Integer> eventIPsAndTableIds;
     private ConcurrentHashMap<String, OFPort> ipsToOVSPortsMap;
 
 //    FlowControlRemover() {
-    FlowControlRemover(IOFSwitch ovsSwitch, OFFactory ofFactory, Ethernet eth) {
-        this.ovsSwitch = ovsSwitch;
-        this.ofFactory = ofFactory;
-        this.eth = eth;
+//    FlowControlRemover(IOFSwitch ovsSwitch, OFFactory ofFactory, Ethernet eth) {
+//        this.ovsSwitch = ovsSwitch;
+//        this.ofFactory = ofFactory;
+//        this.eth = eth;
+//    }
+
+    FlowControlRemover(String customer) {
+        this.customer = customer;
+//        this.eventId = eventId;
     }
 
-    void processEventStatusUDP(Ethernet eth, FlowRepository cienaFlowRepository) {
-        logger.info("[From an ingress container] Processing received UDP Packet.");
-        IPv4 ipv4 = (IPv4) eth.getPayload();
-        UDP udp = (UDP) ipv4.getPayload();
-        Data udpData = (Data) udp.getPayload();
-        byte[] udpDataBytes = udpData.getData();
-        String udpDataString = new String(udpDataBytes);
-        String[] stringElements = udpDataString.split(COLON);
-
-        String eventId = stringElements[EVENT_ID_INDEX];
-        this.customer = stringElements[CUSTOMER_INDEX];
-        cienaFlowRepository.getFlowControlsRemoverMap().put(eventId, this);
-
-        String responseString = String.format(RESPONSE_MSG_FORMAT_TERMINATE, eventId, udpDataString);
-        FlowController.respondToContainerManager(MQTT_PUBLISH_TERMINATE, responseString);
-
-//        HashMap<String, Integer> eventIPsAndTableIds = cienaFlowRepository.cleanUpEventStructures(eventId, customer);
-//        setStructuresForFlowDeletion(eventIPsAndTableIds, cienaFlowRepository.getIpToOVSPortNumberMap());
-
-    }
+//    void processEventStatusUDP(Ethernet eth, FlowRepository cienaFlowRepository) {
+//        logger.info("[From an ingress container] Processing received UDP Packet.");
+//        IPv4 ipv4 = (IPv4) eth.getPayload();
+//        UDP udp = (UDP) ipv4.getPayload();
+//        Data udpData = (Data) udp.getPayload();
+//        byte[] udpDataBytes = udpData.getData();
+//        String udpDataString = new String(udpDataBytes);
+//        String[] stringElements = udpDataString.split(COLON);
+//
+//        String eventId = stringElements[EVENT_ID_INDEX];
+//        this.customer = stringElements[CUSTOMER_INDEX];
+//        cienaFlowRepository.getFlowControlsRemoverMap().put(eventId, this);
+//
+//        String responseString = String.format(RESPONSE_MSG_FORMAT_TERMINATE, eventId, udpDataString);
+//        FlowController.respondToContainerManager(MQTT_PUBLISH_TERMINATE, responseString);
+//
+////        HashMap<String, Integer> eventIPsAndTableIds = cienaFlowRepository.cleanUpEventStructures(eventId, customer);
+////        setStructuresForFlowDeletion(eventIPsAndTableIds, cienaFlowRepository.getIpToOVSPortNumberMap());
+//
+//    }
 
     void setStructuresForFlowDeletion(HashMap<String, Integer> eventIPsAndTableIds,
                                       ConcurrentHashMap<String, OFPort> ipsToOVSPortsMap) {

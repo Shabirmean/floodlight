@@ -1,6 +1,10 @@
 package net.floodlightcontroller.cienaflowcontroller;
 
 import net.floodlightcontroller.core.IOFSwitch;
+import net.floodlightcontroller.packet.Data;
+import net.floodlightcontroller.packet.Ethernet;
+import net.floodlightcontroller.packet.IPv4;
+import net.floodlightcontroller.packet.UDP;
 import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
 import org.eclipse.paho.client.mqttv3.MqttCallback;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
@@ -74,7 +78,6 @@ public class FlowRepository implements MqttCallback {
         } else if (topic.contains(FlowControllerConstants.TERMINATE)) {
 //            FlowControlRemover flRemover = flowControlsRemoverMap.get(eventIdentifier);
             logger.info("@@@@@@@@@@@@@@@ @@@@@ HERE *******************");
-            triggerFowDeletion("DELETE_FLOWS:" + eventIdentifier);
 //            new Thread(() -> {
 //                String customer = flRemover.getCustomer();
 //                HashMap<String, Integer> eventIPsAndTableIds = cleanUpEventStructures(eventIdentifier, customer);
@@ -83,25 +86,6 @@ public class FlowRepository implements MqttCallback {
         }
     }
 
-    private static final int MIN_PORT_VAL = 10000;
-    private static final int MAX_PORT_VAL = 65000;
-
-    private void triggerFowDeletion(String updateMsg) {
-        try {
-            String ovsIp = "193.168.0.1";
-            InetAddress address = InetAddress.getByName(ovsIp);
-
-            int ovsPort = ThreadLocalRandom.current().nextInt(MIN_PORT_VAL, MAX_PORT_VAL);
-            byte[] buf = updateMsg.getBytes();
-
-            DatagramPacket packet = new DatagramPacket(buf, buf.length, address, ovsPort);
-            DatagramSocket dgramSocket = new DatagramSocket();
-            dgramSocket.send(packet);
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
 
     @Override
     public void deliveryComplete(IMqttDeliveryToken iMqttDeliveryToken) {
@@ -354,5 +338,36 @@ public class FlowRepository implements MqttCallback {
         String eventId = customerContainer.getEventId();
         FlowControlRemover flRem = flowControlsRemoverMap.get(eventId);
         flRem.clearOVSFlows(ovsSwitch);
+    }
+
+
+    private static final int EVENT_ID_INDEX = 0;
+    private static final int CUSTOMER_INDEX = 1;
+    private static final String DELETE_FLOW_MSG = "DELETE_FLOWS";
+
+    void processEventStatusUDP(Ethernet eth, IOFSwitch ovsSwitch) {
+        logger.info("[From an ingress container] Processing received UDP Packet.");
+        IPv4 ipv4 = (IPv4) eth.getPayload();
+        UDP udp = (UDP) ipv4.getPayload();
+        Data udpData = (Data) udp.getPayload();
+        byte[] udpDataBytes = udpData.getData();
+        String udpDataString = new String(udpDataBytes);
+        String[] stringElements = udpDataString.split(COLON);
+        String eventId = stringElements[EVENT_ID_INDEX];
+
+//        <EVENT_ID>:<CUSTOMER>:<SOME_MSG>
+        if (udpDataString.contains(DELETE_FLOW_MSG)) {
+            FlowControlRemover flRemover = flowControlsRemoverMap.get(eventId);
+            HashMap<String, Integer> eventIPsAndTableIds = cleanUpEventStructures(eventId, flRemover.getCustomer());
+            flRemover.setStructuresForFlowDeletion(eventIPsAndTableIds, ipToOVSPortNumberMap);
+            flRemover.clearOVSFlows(ovsSwitch);
+
+        } else {
+            String customer = stringElements[CUSTOMER_INDEX];
+            FlowControlRemover flRemover = new FlowControlRemover(customer);
+            flowControlsRemoverMap.put(eventId, flRemover);
+            String responseString = String.format(RESPONSE_MSG_FORMAT_TERMINATE, eventId, udpDataString);
+            FlowController.respondToContainerManager(MQTT_PUBLISH_TERMINATE, responseString);
+        }
     }
 }
