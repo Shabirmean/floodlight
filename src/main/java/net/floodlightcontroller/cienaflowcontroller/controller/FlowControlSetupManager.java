@@ -1,5 +1,7 @@
-package net.floodlightcontroller.cienaflowcontroller;
+package net.floodlightcontroller.cienaflowcontroller.controller;
 
+import net.floodlightcontroller.cienaflowcontroller.datahandler.FlowRepository;
+import net.floodlightcontroller.cienaflowcontroller.dao.ReadyStateHolder;
 import net.floodlightcontroller.core.IOFSwitch;
 import net.floodlightcontroller.packet.Data;
 import net.floodlightcontroller.packet.Ethernet;
@@ -23,7 +25,7 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.List;
 
-import static net.floodlightcontroller.cienaflowcontroller.FlowControllerConstants.*;
+import static net.floodlightcontroller.cienaflowcontroller.utils.FlowControllerConstants.*;
 
 /**
  * Created by shabirmean on 2018-05-10 with some hope.
@@ -64,7 +66,7 @@ class FlowControlSetupManager {
             String customer = stringElements[CUSTOMER_INDEX];
             String hostname = stringElements[HOSTNAME_INDEX];
 
-            ReadyStateHolder readyCon = new ReadyStateHolder(eventId, customer, hostname, containerIp);
+            net.floodlightcontroller.cienaflowcontroller.dao.ReadyStateHolder readyCon = new ReadyStateHolder(eventId, customer, hostname, containerIp);
             cienaFlowRepository.addReadyStateContainer(readyCon);
             return true;
         }

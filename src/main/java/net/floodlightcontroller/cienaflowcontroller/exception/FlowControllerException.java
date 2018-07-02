@@ -1,4 +1,4 @@
-package net.floodlightcontroller.cienaflowcontroller;
+package net.floodlightcontroller.cienaflowcontroller.exception;
 
 /**
  * Created by shabirmean on 2017-12-26 with some hope.

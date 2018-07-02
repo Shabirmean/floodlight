@@ -1,4 +1,4 @@
-package net.floodlightcontroller.cienaflowcontroller;
+package net.floodlightcontroller.cienaflowcontroller.dao.container;
 
 
 /**
@@ -27,7 +27,7 @@ public class CustomerContainer {
     private boolean isReady = false;
     private boolean borderContainer = false;
 
-    CustomerContainer(
+    public CustomerContainer(
             String customer, String cId, String index, String name, String ip, String mac) {
         this.customer = customer;
         this.cId = cId;

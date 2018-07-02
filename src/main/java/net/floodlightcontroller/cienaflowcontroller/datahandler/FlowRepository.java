@@ -1,5 +1,11 @@
-package net.floodlightcontroller.cienaflowcontroller;
+package net.floodlightcontroller.cienaflowcontroller.datahandler;
 
+import net.floodlightcontroller.cienaflowcontroller.dao.container.CustomerContainer;
+import net.floodlightcontroller.cienaflowcontroller.controller.FlowControlRemover;
+import net.floodlightcontroller.cienaflowcontroller.controller.FlowController;
+import net.floodlightcontroller.cienaflowcontroller.dao.ReadyStateHolder;
+import net.floodlightcontroller.cienaflowcontroller.dao.container.IngressContainer;
+import net.floodlightcontroller.cienaflowcontroller.utils.FlowControllerConstants;
 import net.floodlightcontroller.core.IOFSwitch;
 import net.floodlightcontroller.packet.Data;
 import net.floodlightcontroller.packet.Ethernet;
@@ -12,22 +18,16 @@ import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
-import org.projectfloodlight.openflow.protocol.OFFactory;
 import org.projectfloodlight.openflow.types.IPv4Address;
 import org.projectfloodlight.openflow.types.OFPort;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
-import java.io.IOException;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
-import java.net.InetAddress;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ThreadLocalRandom;
 
-import static net.floodlightcontroller.cienaflowcontroller.FlowControllerConstants.*;
+import static net.floodlightcontroller.cienaflowcontroller.utils.FlowControllerConstants.*;
 
 /**
  * Created by shabirmean on 2018-04-25 with some hope.
@@ -35,6 +35,9 @@ import static net.floodlightcontroller.cienaflowcontroller.FlowControllerConstan
 public class FlowRepository implements MqttCallback {
     protected static Logger logger;
     private static final int MAX_TABLE_IDS = 256;
+    private static final int EVENT_ID_INDEX = 0;
+    private static final int CUSTOMER_INDEX = 1;
+    private static final String DELETE_FLOW_MSG = "DELETE_FLOWS";
 
     private final ConcurrentHashMap<String, CustomerEvent> eventIdToEventsMap = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, CustomerEvent> customerToEventsMap = new ConcurrentHashMap<>();
@@ -47,14 +50,10 @@ public class FlowRepository implements MqttCallback {
 
     private final ConcurrentHashMap<String, Integer> ipToTableIdMap = new ConcurrentHashMap<>();
 
-    public ConcurrentHashMap<String, OFPort> getIpToOVSPortNumberMap() {
-        return ipToOVSPortNumberMap;
-    }
-
     private final ConcurrentHashMap<String, OFPort> ipToOVSPortNumberMap = new ConcurrentHashMap<>();
     private BitSet flowTableBits;
 
-    FlowRepository() {
+    public FlowRepository() {
         logger = LoggerFactory.getLogger(FlowRepository.class);
         this.flowTableBits = new BitSet(MAX_TABLE_IDS);
         this.flowTableBits.set(DEFAULT_FLOW_TABLE);
@@ -71,22 +70,11 @@ public class FlowRepository implements MqttCallback {
         String messageIncoming = mqttMessage.toString();
         String eventIdentifier = topic.substring(topic.lastIndexOf(File.separator) + 1, topic.length());
         logger.info("Mqtt-Msg [" + topic + "] : [ " + messageIncoming + " ]");
-
         if (topic.contains(FlowControllerConstants.REQUEST)) {
             new Thread(() -> processMessage(eventIdentifier, messageIncoming)).start();
-
-        } else if (topic.contains(FlowControllerConstants.TERMINATE)) {
-//            FlowControlRemover flRemover = flowControlsRemoverMap.get(eventIdentifier);
-            logger.info("@@@@@@@@@@@@@@@ @@@@@ HERE *******************");
-//            new Thread(() -> {
-//                String customer = flRemover.getCustomer();
-//                HashMap<String, Integer> eventIPsAndTableIds = cleanUpEventStructures(eventIdentifier, customer);
-//                flRemover.setStructuresForFlowDeletion(eventIPsAndTableIds, ipToOVSPortNumberMap);
-//            }).start();
         }
     }
-
-
+    
     @Override
     public void deliveryComplete(IMqttDeliveryToken iMqttDeliveryToken) {
 
@@ -165,16 +153,14 @@ public class FlowRepository implements MqttCallback {
                 }
 
                 synchronized (eventIdToEventsMap) {
-                    newEvent = new CustomerEvent(eventId, customer, subnet);
+                    newEvent = new CustomerEvent(eventId, customer);
                     newEvent.addCustomerContainers(containerList);
-                    ArrayList<ReadyStateHolder> readyContainerList = evntsToReadyConMap.get(eventId);
+                    ArrayList<net.floodlightcontroller.cienaflowcontroller.dao.ReadyStateHolder> readyContainerList = evntsToReadyConMap.get(eventId);
                     if (readyContainerList != null && !readyContainerList.isEmpty()) {
                         newEvent.updateReadyState(readyContainerList);
                     }
-//                    newEvent.watchAndRespondToContainerManager();
                     eventIdToEventsMap.put(eventId, newEvent);
                     customerToEventsMap.put(customer, newEvent);
-//                    subnetToEventsMap.put(subnet, newEvent);
                 }
                 responseString = String.format(RESPONSE_MSG_FORMAT_READY, eventIdentifier, "true", "SUCCESS");
             }
@@ -184,10 +170,11 @@ public class FlowRepository implements MqttCallback {
             e.printStackTrace();
             responseString = String.format(RESPONSE_MSG_FORMAT_READY, eventIdentifier, "false", e.getMessage());
         }
-        FlowController.respondToContainerManager(MQTT_PUBLISH_EXEC, responseString);
+        net.floodlightcontroller.cienaflowcontroller.controller.FlowController.respondToContainerManager(MQTT_PUBLISH_EXEC, responseString);
     }
 
-    void addReadyStateContainer(ReadyStateHolder readyContainer) {
+    public  void addReadyStateContainer(net.floodlightcontroller.cienaflowcontroller.dao.ReadyStateHolder 
+                                                readyContainer) {
         synchronized (eventIdToEventsMap) {
             String eventId = readyContainer.getEventId();
             CustomerEvent anEvent = eventIdToEventsMap.get(eventId);
@@ -207,8 +194,7 @@ public class FlowRepository implements MqttCallback {
         }
     }
 
-    synchronized HashMap<String, Integer> cleanUpEventStructures(String eventId, String customer) {
-//        CustomerEvent event = eventIdToEventsMap.get(eventId);
+    private synchronized HashMap<String, Integer> cleanUpEventStructures(String eventId, String customer) {
         CustomerEvent event = eventIdToEventsMap.remove(eventId);
         customerToEventsMap.remove(customer);
         evntsToReadyConMap.remove(eventId);
@@ -221,23 +207,20 @@ public class FlowRepository implements MqttCallback {
                 //TODO:: Must Uncomment for correct usage
                 ipsToCustomerConMap.remove(ip);
                 int tableId = clearFlowTableBit(ip);
-//                int tableId = getFlowTableId(ip);
                 removedIPsToTableIdMap.put(ip, tableId);
             } else {
-                logger.info("############## Removing Customer from Ingress #################");
                 IngressContainer ingressCon = (IngressContainer) ipsToCustomerConMap.get(ip);
                 ingressCon.getCustomerToEventMap().remove(customer);
             }
         }
-//        eventIdToEventsMap.remove(eventId);
         return removedIPsToTableIdMap;
     }
 
-    synchronized boolean isIngressContainerIp(String ipAddress) {
+    public synchronized boolean isIngressContainerIp(String ipAddress) {
         return ingressContainerIps.contains(ipAddress);
     }
 
-    synchronized boolean isNeighbourOfIngress(String ipAddress) {
+    public synchronized boolean isNeighbourOfIngress(String ipAddress) {
         List<String> listOfIngressNeighbours = getNeighboursOfIngress();
         return listOfIngressNeighbours.contains(ipAddress);
     }
@@ -251,7 +234,6 @@ public class FlowRepository implements MqttCallback {
             for (String eventId : eventsOfIngress) {
                 CustomerEvent cusEvent = eventIdToEventsMap.get(eventId);
                 List<String> neighbourConIdxs = getNeighbourContainerIdx(ingressIp);
-
                 for (String idx : neighbourConIdxs) {
                     String ipAdd = cusEvent.getIpFromIndex(idx);
                     listOfAllNeighbours.add(ipAdd);
@@ -261,14 +243,13 @@ public class FlowRepository implements MqttCallback {
         return listOfAllNeighbours;
     }
 
-    synchronized List<IPv4Address> getNeighbourIps(IPv4Address ipAddress) {
+    public synchronized List<IPv4Address> getNeighbourIps(IPv4Address ipAddress) {
         List<IPv4Address> adjacentIpAddresses = new ArrayList<>();
         CustomerContainer customerContainer = ipsToCustomerConMap.get(ipAddress.toString());
 
         if (customerContainer != null) {
             String eventId = customerContainer.getEventId();
             CustomerEvent customerEvent = eventIdToEventsMap.get(eventId);
-
             List<String> neighbourIndexes = getNeighbourContainerIdx(ipAddress.toString());
             for (String indx : neighbourIndexes) {
                 String ipAdd = customerEvent.getIpFromIndex(indx);
@@ -284,7 +265,7 @@ public class FlowRepository implements MqttCallback {
         return Arrays.asList(allowedFlows.split("\\s*,\\s*"));
     }
 
-    synchronized int getFlowTableId(IPv4Address srcIp) {
+    public synchronized int getFlowTableId(IPv4Address srcIp) {
         Integer tableId = ipToTableIdMap.get(srcIp.toString());
         if (tableId == null) {
             tableId = createNewTableEntryForIP(srcIp.toString());
@@ -308,44 +289,13 @@ public class FlowRepository implements MqttCallback {
         return tableId;
     }
 
-    void addInPortForIp(String ipAddress, OFPort ovsPort) {
+    public void addInPortForIp(String ipAddress, OFPort ovsPort) {
         if (!ipToOVSPortNumberMap.containsKey(ipAddress)) {
             ipToOVSPortNumberMap.put(ipAddress, ovsPort);
         }
     }
 
-    ConcurrentHashMap<String, FlowControlRemover> getFlowControlsRemoverMap() {
-        return flowControlsRemoverMap;
-    }
-
-    boolean isIPFromTerminatedFlow(IPv4Address ipAddress) {
-        CustomerContainer customerContainer = ipsToCustomerConMap.get(ipAddress.toString());
-        if (customerContainer != null) {
-            String eventId = customerContainer.getEventId();
-            FlowControlRemover flRem = flowControlsRemoverMap.get(eventId);
-            if (flRem != null) {
-                logger.info(">>>>>>>>>>>>>>> FLREMOVER FOUND <<<<<<<<<<<<<<<<<<<<< [" + ipAddress + "]");
-//                return flRem.isTerminated();
-                return true;
-            }
-        }
-        logger.info(">>>>>>>>>>>>>>> FLREMOVER NOT FOUND <<<<<<<<<<<<<<<<<<<<< [" + ipAddress + "]");
-        return false;
-    }
-
-    void clearEventFlowsOfIP(IOFSwitch ovsSwitch, IPv4Address ipAddress){
-        CustomerContainer customerContainer = ipsToCustomerConMap.get(ipAddress.toString());
-        String eventId = customerContainer.getEventId();
-        FlowControlRemover flRem = flowControlsRemoverMap.get(eventId);
-        flRem.clearOVSFlows(ovsSwitch);
-    }
-
-
-    private static final int EVENT_ID_INDEX = 0;
-    private static final int CUSTOMER_INDEX = 1;
-    private static final String DELETE_FLOW_MSG = "DELETE_FLOWS";
-
-    void processEventStatusUDP(Ethernet eth, IOFSwitch ovsSwitch) {
+    public void processEventStatusUDP(Ethernet eth, IOFSwitch ovsSwitch) {
         logger.info("[From an ingress container] Processing received UDP Packet.");
         IPv4 ipv4 = (IPv4) eth.getPayload();
         UDP udp = (UDP) ipv4.getPayload();
@@ -357,14 +307,13 @@ public class FlowRepository implements MqttCallback {
 
 //        <EVENT_ID>:<CUSTOMER>:<SOME_MSG>
         if (udpDataString.contains(DELETE_FLOW_MSG)) {
-            FlowControlRemover flRemover = flowControlsRemoverMap.get(eventId);
+            net.floodlightcontroller.cienaflowcontroller.controller.FlowControlRemover flRemover = flowControlsRemoverMap.get(eventId);
             HashMap<String, Integer> eventIPsAndTableIds = cleanUpEventStructures(eventId, flRemover.getCustomer());
-            flRemover.setStructuresForFlowDeletion(eventIPsAndTableIds, ipToOVSPortNumberMap);
-            flRemover.clearOVSFlows(ovsSwitch);
+            flRemover.clearOVSFlows(ovsSwitch, eventIPsAndTableIds, ipToOVSPortNumberMap);
 
         } else {
             String customer = stringElements[CUSTOMER_INDEX];
-            FlowControlRemover flRemover = new FlowControlRemover(customer);
+            net.floodlightcontroller.cienaflowcontroller.controller.FlowControlRemover flRemover = new FlowControlRemover(customer);
             flowControlsRemoverMap.put(eventId, flRemover);
             String responseString = String.format(RESPONSE_MSG_FORMAT_TERMINATE, eventId, udpDataString);
             FlowController.respondToContainerManager(MQTT_PUBLISH_TERMINATE, responseString);

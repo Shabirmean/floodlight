@@ -1,5 +1,6 @@
-package net.floodlightcontroller.cienaflowcontroller;
+package net.floodlightcontroller.cienaflowcontroller.controller;
 
+import net.floodlightcontroller.cienaflowcontroller.datahandler.FlowRepository;
 import net.floodlightcontroller.core.FloodlightContext;
 import net.floodlightcontroller.core.IFloodlightProviderService;
 import net.floodlightcontroller.core.IOFMessageListener;
@@ -8,10 +9,8 @@ import net.floodlightcontroller.core.module.FloodlightModuleContext;
 import net.floodlightcontroller.core.module.FloodlightModuleException;
 import net.floodlightcontroller.core.module.IFloodlightModule;
 import net.floodlightcontroller.core.module.IFloodlightService;
-import net.floodlightcontroller.packet.Data;
 import net.floodlightcontroller.packet.Ethernet;
 import net.floodlightcontroller.packet.IPv4;
-import net.floodlightcontroller.packet.UDP;
 import net.floodlightcontroller.util.OFMessageUtils;
 import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
@@ -23,10 +22,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.UnsupportedEncodingException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 
-import static net.floodlightcontroller.cienaflowcontroller.FlowControllerConstants.MQTT_BROKER_URI;
-import static net.floodlightcontroller.cienaflowcontroller.FlowControllerConstants.MQTT_SUBSCRIBE_TOPIC;
+import static net.floodlightcontroller.cienaflowcontroller.utils.FlowControllerConstants.MQTT_BROKER_URI;
+import static net.floodlightcontroller.cienaflowcontroller.utils.FlowControllerConstants.MQTT_SUBSCRIBE_TOPIC;
 import static org.apache.commons.codec.CharEncoding.UTF_8;
 
 /**
@@ -36,8 +38,6 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
     protected static Logger logger;
     protected IFloodlightProviderService floodlightProvider;
     private FlowRepository cienaFlowRepository;
-
-    static ArrayList<String> deletedIpAddresses = new ArrayList<>();
 
     @Override
     public String getName() {
@@ -106,45 +106,11 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
                 IPv4Address dstIp = ipv4.getDestinationAddress();
                 cienaFlowRepository.addInPortForIp(srcIp.toString(), inOFPort);
 
-//                if (cienaFlowRepository.isIPFromTerminatedFlow(srcIp)) {
-////                    cienaFlowRepository.clearEventFlowsOfIP(ovsSwitch, srcIp);
-//                    return Command.CONTINUE;
-//
-//                } else if (cienaFlowRepository.isIPFromTerminatedFlow(dstIp)) {
-////                    cienaFlowRepository.clearEventFlowsOfIP(ovsSwitch, dstIp);
-//                    return Command.CONTINUE;
-//
-//                } else
-
-                if (ipv4.getProtocol() == IpProtocol.UDP) {
-                    UDP udp = (UDP) ipv4.getPayload();
-                    Data udpData = (Data) udp.getPayload();
-                    byte[] udpDataBytes = udpData.getData();
-                    String udpDataString = new String(udpDataBytes);
-                    logger.info("++++++++ >>>> SRC: " + srcIp + ", DST: " + dstIp + ", Item-" + udpDataString);
-                }
-
-                if (deletedIpAddresses.contains(srcIp.toString())) {
-                    logger.info("/////////////////////////////////// MSG FROM DELETED IP: " + srcIp);
-                }
-
-                if (deletedIpAddresses.contains(dstIp.toString())) {
-                    logger.info("/////////////////////////////////// MSG FROM DELETED IP: " + dstIp);
-                }
-
-
                 if (ipv4.getProtocol() == IpProtocol.UDP && srcMac != switchMac) {
                     // if it is a UDP Packet and its source is not the OVS SWITCH itself
                     if (cienaFlowRepository.isIngressContainerIp(srcIp.toString())) {
                         // if UDP packet from an ingress containers then notify end state
-                        String srcIpString = srcIp.toString();
-
-                        // TODO:: Strip down OVS flow controls
-//                        FlowControlRemover fcRem = new FlowControlRemover(ovsSwitch, myFactory, eth);
-//                        FlowControlRemover fcRem = new FlowControlRemover();
-//                        fcRem.processEventStatusUDP(eth, cienaFlowRepository);
                         cienaFlowRepository.processEventStatusUDP(eth, ovsSwitch);
-
                     } else {
                         // if UDP packet from any intermediary containers then update ready state
                         boolean validUDPPacket = controlsManager.processReadyStateUDP(cienaFlowRepository);
@@ -188,7 +154,7 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
         }
     }
 
-    static void respondToContainerManager(String topic, String responseToCM) {
+    public static void respondToContainerManager(String topic, String responseToCM) {
         try {
             MqttConnectOptions options = new MqttConnectOptions();
             options.setMqttVersion(MqttConnectOptions.MQTT_VERSION_3_1);

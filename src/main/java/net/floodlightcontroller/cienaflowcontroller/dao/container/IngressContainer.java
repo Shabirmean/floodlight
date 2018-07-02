@@ -1,8 +1,8 @@
-package net.floodlightcontroller.cienaflowcontroller;
+package net.floodlightcontroller.cienaflowcontroller.dao.container;
 
 import java.util.concurrent.ConcurrentHashMap;
 
-import static net.floodlightcontroller.cienaflowcontroller.FlowControllerConstants.INGRESS_CUSTOMER_CONTAINER;
+import static net.floodlightcontroller.cienaflowcontroller.utils.FlowControllerConstants.INGRESS_CUSTOMER_CONTAINER;
 
 /**
  * Created by shabirmean on 2018-05-30 with some hope.
@@ -24,7 +24,7 @@ public class IngressContainer extends CustomerContainer {
 
     private ConcurrentHashMap<String, String> customerToEventMap;
 
-    IngressContainer(CustomerContainer cusCon) {
+    public IngressContainer(CustomerContainer cusCon) {
         super(INGRESS_CUSTOMER_CONTAINER,
                 cusCon.getcId(), cusCon.getIndex(), cusCon.getName(), cusCon.getIpAddress(), cusCon.getMacAddress());
         super.setBorderContainer(cusCon.isBorderContainer());

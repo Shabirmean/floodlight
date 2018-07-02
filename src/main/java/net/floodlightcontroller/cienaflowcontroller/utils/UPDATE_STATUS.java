@@ -1,4 +1,4 @@
-package net.floodlightcontroller.cienaflowcontroller;
+package net.floodlightcontroller.cienaflowcontroller.utils;
 
 /**
  * Created by shabirmean on 2018-05-28 with some hope.

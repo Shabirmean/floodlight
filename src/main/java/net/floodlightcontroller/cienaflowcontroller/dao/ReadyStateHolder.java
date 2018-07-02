@@ -1,8 +1,9 @@
-package net.floodlightcontroller.cienaflowcontroller;
+package net.floodlightcontroller.cienaflowcontroller.dao;
 
 /**
  * Created by shabirmean on 2018-04-25 with some hope.
  */
+@SuppressWarnings("WeakerAccess")
 public class ReadyStateHolder {
     private String eventId;
     private String customer;
