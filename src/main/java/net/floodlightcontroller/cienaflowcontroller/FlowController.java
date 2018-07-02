@@ -21,7 +21,6 @@ import org.projectfloodlight.openflow.protocol.*;
 import org.projectfloodlight.openflow.types.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import sun.jvm.hotspot.oops.Array;
 
 import java.io.UnsupportedEncodingException;
 import java.util.*;
