@@ -21,6 +21,7 @@ import org.projectfloodlight.openflow.protocol.*;
 import org.projectfloodlight.openflow.types.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import sun.jvm.hotspot.oops.Array;
 
 import java.io.UnsupportedEncodingException;
 import java.util.*;
@@ -36,6 +37,8 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
     protected static Logger logger;
     protected IFloodlightProviderService floodlightProvider;
     private FlowRepository cienaFlowRepository;
+
+    static ArrayList<String> deletedIpAddresses = new ArrayList<>();
 
     @Override
     public String getName() {
@@ -122,6 +125,14 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
                     logger.info("++++++++ >>>> SRC: " + srcIp + ", DST: " + dstIp + ", Item-" + udpDataString);
                 }
 
+                if (deletedIpAddresses.contains(srcIp.toString())) {
+                    logger.info("/////////////////////////////////// MSG FROM DELETED IP: " + srcIp);
+                }
+
+                if (deletedIpAddresses.contains(dstIp.toString())) {
+                    logger.info("/////////////////////////////////// MSG FROM DELETED IP: " + dstIp);
+                }
+
 
                 if (ipv4.getProtocol() == IpProtocol.UDP && srcMac != switchMac) {
                     // if it is a UDP Packet and its source is not the OVS SWITCH itself
@@ -142,23 +153,6 @@ public class FlowController implements IOFMessageListener, IFloodlightModule {
                             setupContainerSpecificTableEntries(controlsManager, srcIp);
                         }
                     }
-                } else if (ipv4.getProtocol() == IpProtocol.UDP) {
-                    UDP udp = (UDP) ipv4.getPayload();
-                    Data udpData = (Data) udp.getPayload();
-                    byte[] udpDataBytes = udpData.getData();
-                    String udpDataString = new String(udpDataBytes);
-                    logger.info("++++++++ >>>> SRC: " + srcIp + ", DST: " + dstIp + ", Item-" + udpDataString);
-
-                    if (udpDataString.contains("DELETE_FLOWS")) {
-                        String eventId = udpDataString.split(":")[1];
-                        FlowControlRemover flRem = cienaFlowRepository.getFlowControlsRemoverMap().get(eventId);
-                        HashMap<String, Integer> eventIPsAndTableIds =
-                                cienaFlowRepository.cleanUpEventStructures(eventId, flRem.getCustomer());
-                        flRem.setStructuresForFlowDeletion(eventIPsAndTableIds, cienaFlowRepository
-                                .getIpToOVSPortNumberMap());
-                        flRem.clearOVSFlows(ovsSwitch);
-                    }
-
                 } else {
                     // if the incoming packet is between an Ingress (In or Out) and its neighbour
                     if ((

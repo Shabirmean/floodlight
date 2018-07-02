@@ -94,6 +94,7 @@ public class FlowControlRemover {
             logger.info("IP: " + containerIp + ", TID: " + tableId + ", PID: " + portId);
             deleteFlowByInPort(ovsSwitch, portId);
             deleteFlowByDestinationIP(ovsSwitch, containerIp);
+            FlowController.deletedIpAddresses.add(containerIp);
         }
         System.out.println("--------------------------------------------");
     }
@@ -104,7 +105,9 @@ public class FlowControlRemover {
         OFFactory ofFactory = ovsSwitch.getOFFactory();
         Match flowMatchByPort = ofFactory.buildMatch()
                 .setExact(MatchField.IN_PORT, inPort)
+//                .setMasked(MatchField.IN_PORT, )
                 .build();
+
         OFFlowDelete.Builder builder = ofFactory.buildFlowDelete();
         OFFlowDelete deleteFlowWithPortId = builder.setMatch(flowMatchByPort).build();
         ovsSwitch.write(deleteFlowWithPortId);
