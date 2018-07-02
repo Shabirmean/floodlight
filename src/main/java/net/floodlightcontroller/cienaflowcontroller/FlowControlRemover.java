@@ -93,7 +93,7 @@ public class FlowControlRemover {
             OFPort portId = ipsToOVSPortsMap.get(containerIp);
             logger.info("IP: " + containerIp + ", TID: " + tableId + ", PID: " + portId);
 //            deleteFlowByInPort(ovsSwitch, portId);
-            deleteFlowByInPort(ovsSwitch, tableId);
+            deleteFlowByInTableId(ovsSwitch, tableId);
             deleteFlowByDestinationIP(ovsSwitch, containerIp);
             FlowController.deletedIpAddresses.add(containerIp);
         }
