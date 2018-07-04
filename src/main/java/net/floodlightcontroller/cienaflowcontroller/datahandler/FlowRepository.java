@@ -74,7 +74,7 @@ public class FlowRepository implements MqttCallback {
             new Thread(() -> processMessage(eventIdentifier, messageIncoming)).start();
         }
     }
-    
+
     @Override
     public void deliveryComplete(IMqttDeliveryToken iMqttDeliveryToken) {
 
@@ -140,10 +140,10 @@ public class FlowRepository implements MqttCallback {
                         IngressContainer ingressCusCon = (IngressContainer) ipsToCustomerConMap.get(ip);
                         if (ingressCusCon == null) {
                             ingressCusCon = new IngressContainer(cusContainer);
-                            ipsToCustomerConMap.put(ip, ingressCusCon);
-                        } else {
-                            ingressCusCon.addNewCustomerEvent(customer, eventId);
+//                            ipsToCustomerConMap.put(ip, ingressCusCon);
                         }
+
+                        ingressCusCon.addNewCustomerEvent(customer, eventId);
                         containerList.add(ingressCusCon);
                         ipsToCustomerConMap.put(ip, ingressCusCon);
                     } else {
@@ -155,7 +155,7 @@ public class FlowRepository implements MqttCallback {
                 synchronized (eventIdToEventsMap) {
                     newEvent = new CustomerEvent(eventId, customer);
                     newEvent.addCustomerContainers(containerList);
-                    ArrayList<net.floodlightcontroller.cienaflowcontroller.dao.ReadyStateHolder> readyContainerList = evntsToReadyConMap.get(eventId);
+                    ArrayList<ReadyStateHolder> readyContainerList = evntsToReadyConMap.get(eventId);
                     if (readyContainerList != null && !readyContainerList.isEmpty()) {
                         newEvent.updateReadyState(readyContainerList);
                     }
@@ -170,11 +170,10 @@ public class FlowRepository implements MqttCallback {
             e.printStackTrace();
             responseString = String.format(RESPONSE_MSG_FORMAT_READY, eventIdentifier, "false", e.getMessage());
         }
-        net.floodlightcontroller.cienaflowcontroller.controller.FlowController.respondToContainerManager(MQTT_PUBLISH_EXEC, responseString);
+        FlowController.respondToContainerManager(MQTT_PUBLISH_EXEC, responseString);
     }
 
-    public  void addReadyStateContainer(net.floodlightcontroller.cienaflowcontroller.dao.ReadyStateHolder 
-                                                readyContainer) {
+    public void addReadyStateContainer(ReadyStateHolder readyContainer) {
         synchronized (eventIdToEventsMap) {
             String eventId = readyContainer.getEventId();
             CustomerEvent anEvent = eventIdToEventsMap.get(eventId);
@@ -308,13 +307,13 @@ public class FlowRepository implements MqttCallback {
 
 //        <EVENT_ID>:<CUSTOMER>:<SOME_MSG>
         if (udpDataString.contains(DELETE_FLOW_MSG)) {
-            net.floodlightcontroller.cienaflowcontroller.controller.FlowControlRemover flRemover = flowControlsRemoverMap.get(eventId);
+            FlowControlRemover flRemover = flowControlsRemoverMap.get(eventId);
             HashMap<String, Integer> eventIPsAndTableIds = cleanUpEventStructures(eventId, flRemover.getCustomer());
             flRemover.clearOVSFlows(ovsSwitch, eventIPsAndTableIds, ipToOVSPortNumberMap);
 
         } else {
             String customer = stringElements[CUSTOMER_INDEX];
-            net.floodlightcontroller.cienaflowcontroller.controller.FlowControlRemover flRemover = new FlowControlRemover(customer);
+            FlowControlRemover flRemover = new FlowControlRemover(customer);
             flowControlsRemoverMap.put(eventId, flRemover);
             String responseString = String.format(RESPONSE_MSG_FORMAT_TERMINATE, eventId, udpDataString);
             FlowController.respondToContainerManager(MQTT_PUBLISH_TERMINATE, responseString);
