@@ -304,18 +304,27 @@ public class FlowRepository implements MqttCallback {
         String udpDataString = new String(udpDataBytes);
         String[] stringElements = udpDataString.split(COLON);
         String eventId = stringElements[EVENT_ID_INDEX];
+        //TODO:: Added for runTime measurement metrics. must be removed later
+        String eventTime = stringElements[stringElements.length - 1];
 
 //        <EVENT_ID>:<CUSTOMER>:<SOME_MSG>
         if (udpDataString.contains(DELETE_FLOW_MSG)) {
             FlowControlRemover flRemover = flowControlsRemoverMap.get(eventId);
             HashMap<String, Integer> eventIPsAndTableIds = cleanUpEventStructures(eventId, flRemover.getCustomer());
             flRemover.clearOVSFlows(ovsSwitch, eventIPsAndTableIds, ipToOVSPortNumberMap);
+            //TODO:: Added for runTime measurement metrics. must be removed later
+            String cleanUpCompleteMsg = "{" +
+                                                "\"eventId\":\"" + eventId + "\"," +
+                                                "\"time\":\"" + System.nanoTime() + "\"" +
+                                        "}";
+            FlowController.respondToContainerManager("ciena/cmanager/fm_cm/alldone", cleanUpCompleteMsg);
 
         } else {
+            // <RECEVD_EVENT_ID>:<RECVD_CUSTOMER>:<CORRECTION>:<MSG>:<FINISHED_TIME>
             String customer = stringElements[CUSTOMER_INDEX];
             FlowControlRemover flRemover = new FlowControlRemover(customer);
             flowControlsRemoverMap.put(eventId, flRemover);
-            String responseString = String.format(RESPONSE_MSG_FORMAT_TERMINATE, eventId, udpDataString);
+            String responseString = String.format(RESPONSE_MSG_FORMAT_TERMINATE, eventId, eventTime, udpDataString);
             FlowController.respondToContainerManager(MQTT_PUBLISH_TERMINATE, responseString);
         }
     }
