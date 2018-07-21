@@ -54,8 +54,8 @@ public class FlowRepository implements MqttCallback {
     private final ArrayList<String> ingressContainerIps = new ArrayList<>();
 
     private final ConcurrentHashMap<String, Integer> ipToTableIdMap = new ConcurrentHashMap<>();
-
     private final ConcurrentHashMap<String, OFPort> ipToOVSPortNumberMap = new ConcurrentHashMap<>();
+    private final Set<String> acknowledgedEvents = new HashSet<>();
     private BitSet flowTableBits;
 
     public FlowRepository() {
@@ -329,11 +329,14 @@ public class FlowRepository implements MqttCallback {
 
         } else if (stringElements.length > 2) {
             // <RECEVD_EVENT_ID>:<RECVD_CUSTOMER>:<CORRECTION>:<MSG>:<FINISHED_TIME>
-            String customer = stringElements[CUSTOMER_INDEX];
-            FlowControlRemover flRemover = new FlowControlRemover(customer);
-            flowControlsRemoverMap.put(eventId, flRemover);
-            String responseString = String.format(RESPONSE_MSG_FORMAT_TERMINATE, eventId, eventTime, udpDataString);
-            FlowController.respondToContainerManager(MQTT_PUBLISH_TERMINATE, responseString);
+            if (!acknowledgedEvents.contains(eventId)) {
+                acknowledgedEvents.add(eventId);
+                String customer = stringElements[CUSTOMER_INDEX];
+                FlowControlRemover flRemover = new FlowControlRemover(customer);
+                flowControlsRemoverMap.put(eventId, flRemover);
+                String responseString = String.format(RESPONSE_MSG_FORMAT_TERMINATE, eventId, eventTime, udpDataString);
+                FlowController.respondToContainerManager(MQTT_PUBLISH_TERMINATE, responseString);
+            }
             acknowledgeIngress(srcAddress, udp.getSourcePort().getPort(), eventId);
         }
     }
