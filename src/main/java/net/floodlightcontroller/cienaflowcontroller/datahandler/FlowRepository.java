@@ -42,6 +42,7 @@ public class FlowRepository implements MqttCallback {
     private static final int MAX_TABLE_IDS = 256;
     private static final int EVENT_ID_INDEX = 0;
     private static final int CUSTOMER_INDEX = 1;
+    private static final int EGRESS_PORT_INDEX = 5;
     private static final String DELETE_FLOW_MSG = "DELETE_FLOWS";
 
     private final ConcurrentHashMap<String, CustomerEvent> eventIdToEventsMap = new ConcurrentHashMap<>();
@@ -337,7 +338,8 @@ public class FlowRepository implements MqttCallback {
                 String responseString = String.format(RESPONSE_MSG_FORMAT_TERMINATE, eventId, eventTime, udpDataString);
                 FlowController.respondToContainerManager(MQTT_PUBLISH_TERMINATE, responseString);
             }
-            acknowledgeIngress(srcAddress, udp.getSourcePort().getPort(), eventId);
+            int egressPort = Integer.parseInt(stringElements[EGRESS_PORT_INDEX]);
+            acknowledgeIngress(srcAddress, egressPort, eventId);
         }
     }
 
