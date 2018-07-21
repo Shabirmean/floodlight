@@ -24,8 +24,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.IOException;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ThreadLocalRandom;
 
 import static net.floodlightcontroller.cienaflowcontroller.utils.FlowControllerConstants.*;
 
@@ -298,6 +303,8 @@ public class FlowRepository implements MqttCallback {
     public void processEventStatusUDP(Ethernet eth, IOFSwitch ovsSwitch) {
         logger.info("[From an ingress container] Processing received UDP Packet.");
         IPv4 ipv4 = (IPv4) eth.getPayload();
+        String srcAddress = ipv4.getSourceAddress().toString();
+
         UDP udp = (UDP) ipv4.getPayload();
         Data udpData = (Data) udp.getPayload();
         byte[] udpDataBytes = udpData.getData();
@@ -307,6 +314,7 @@ public class FlowRepository implements MqttCallback {
         //TODO:: Added for runTime measurement metrics. must be removed later
         String eventTime = stringElements[stringElements.length - 1];
 
+        logger.info("#### Received UDP Msg [" + udpDataString + "] from SRC-IP [" + srcAddress);
 //        <EVENT_ID>:<CUSTOMER>:<SOME_MSG>
         if (udpDataString.contains(DELETE_FLOW_MSG)) {
             FlowControlRemover flRemover = flowControlsRemoverMap.get(eventId);
@@ -319,13 +327,27 @@ public class FlowRepository implements MqttCallback {
                                         "}";
             FlowController.respondToContainerManager("ciena/cmanager/fm_cm/alldone", cleanUpCompleteMsg);
 
-        } else {
+        } else if (stringElements.length > 2) {
             // <RECEVD_EVENT_ID>:<RECVD_CUSTOMER>:<CORRECTION>:<MSG>:<FINISHED_TIME>
             String customer = stringElements[CUSTOMER_INDEX];
             FlowControlRemover flRemover = new FlowControlRemover(customer);
             flowControlsRemoverMap.put(eventId, flRemover);
             String responseString = String.format(RESPONSE_MSG_FORMAT_TERMINATE, eventId, eventTime, udpDataString);
             FlowController.respondToContainerManager(MQTT_PUBLISH_TERMINATE, responseString);
+            acknowledgeIngress(srcAddress, udp.getSourcePort().getPort(), eventId);
+        }
+    }
+
+    private void acknowledgeIngress(String ingressIp, int ingressPort, String eventId) {
+        try {
+            logger.info("Sending ACK to event [" + eventId + "] on Socket [ " + ingressIp + ":" + ingressPort + "]");
+            InetAddress address = InetAddress.getByName(ingressIp);
+            byte[] buf = ("ACK:" + eventId).getBytes();
+            DatagramPacket packet = new DatagramPacket(buf, buf.length, address, ingressPort);
+            DatagramSocket dgramSocket = new DatagramSocket();
+            dgramSocket.send(packet);
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 }
