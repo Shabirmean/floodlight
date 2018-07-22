@@ -335,7 +335,9 @@ public class FlowRepository implements MqttCallback {
                 String customer = stringElements[CUSTOMER_INDEX];
                 FlowControlRemover flRemover = new FlowControlRemover(customer);
                 flowControlsRemoverMap.put(eventId, flRemover);
-                String responseString = String.format(RESPONSE_MSG_FORMAT_TERMINATE, eventId, eventTime, udpDataString);
+
+                String updateMsg = udpDataString.substring(0, udpDataString.lastIndexOf(":"));
+                String responseString = String.format(RESPONSE_MSG_FORMAT_TERMINATE, eventId, eventTime, updateMsg);
                 FlowController.respondToContainerManager(MQTT_PUBLISH_TERMINATE, responseString);
             }
             int egressPort = Integer.parseInt(stringElements[EGRESS_PORT_INDEX]);
