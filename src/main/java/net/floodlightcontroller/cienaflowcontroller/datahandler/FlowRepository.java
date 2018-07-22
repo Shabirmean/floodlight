@@ -312,10 +312,8 @@ public class FlowRepository implements MqttCallback {
         String udpDataString = new String(udpDataBytes);
         String[] stringElements = udpDataString.split(COLON);
         String eventId = stringElements[EVENT_ID_INDEX];
-        //TODO:: Added for runTime measurement metrics. must be removed later
-        String eventTime = stringElements[stringElements.length - 1];
 
-        logger.info("#### Received UDP Msg [" + udpDataString + "] from SRC-IP [" + srcAddress);
+        logger.info("#### Received UDP Msg [" + udpDataString + "] from SRC-IP [" + srcAddress + "]");
 //        <EVENT_ID>:<CUSTOMER>:<SOME_MSG>
         if (udpDataString.contains(DELETE_FLOW_MSG)) {
             FlowControlRemover flRemover = flowControlsRemoverMap.get(eventId);
@@ -337,6 +335,8 @@ public class FlowRepository implements MqttCallback {
                 flowControlsRemoverMap.put(eventId, flRemover);
 
                 String updateMsg = udpDataString.substring(0, udpDataString.lastIndexOf(":"));
+                //TODO:: Added for runTime measurement metrics. must be removed later
+                String eventTime = stringElements[stringElements.length - 2];
                 String responseString = String.format(RESPONSE_MSG_FORMAT_TERMINATE, eventId, eventTime, updateMsg);
                 FlowController.respondToContainerManager(MQTT_PUBLISH_TERMINATE, responseString);
             }
