@@ -320,9 +320,10 @@ public class FlowRepository implements MqttCallback {
             HashMap<String, Integer> eventIPsAndTableIds = cleanUpEventStructures(eventId, flRemover.getCustomer());
             flRemover.clearOVSFlows(ovsSwitch, eventIPsAndTableIds, ipToOVSPortNumberMap);
             //TODO:: Added for runTime measurement metrics. must be removed later
+            String cleanUpTime = System.nanoTime() + "-" + System.currentTimeMillis();
             String cleanUpCompleteMsg = "{" +
                                                 "\"eventId\":\"" + eventId + "\"," +
-                                                "\"time\":\"" + System.nanoTime() + "\"" +
+                                                "\"time\":\"" + cleanUpTime + "\"" +
                                         "}";
             FlowController.respondToContainerManager("ciena/cmanager/fm_cm/alldone", cleanUpCompleteMsg);
 
