@@ -327,7 +327,7 @@ public class FlowRepository implements MqttCallback {
                                         "}";
             FlowController.respondToContainerManager("ciena/cmanager/fm_cm/alldone", cleanUpCompleteMsg);
 
-        } else if (stringElements.length > 2) {
+        } else if (stringElements.length == 6) {
             // <RECEVD_EVENT_ID>:<RECVD_CUSTOMER>:<CORRECTION>:<MSG>:<FINISHED_TIME>
             if (!acknowledgedEvents.contains(eventId)) {
                 acknowledgedEvents.add(eventId);
