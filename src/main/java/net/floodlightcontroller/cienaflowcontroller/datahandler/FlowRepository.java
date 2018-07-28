@@ -320,7 +320,7 @@ public class FlowRepository implements MqttCallback {
             HashMap<String, Integer> eventIPsAndTableIds = cleanUpEventStructures(eventId, flRemover.getCustomer());
             flRemover.clearOVSFlows(ovsSwitch, eventIPsAndTableIds, ipToOVSPortNumberMap);
             //TODO:: Added for runTime measurement metrics. must be removed later
-            String cleanUpTime = System.nanoTime() + "-" + System.currentTimeMillis();
+            String cleanUpTime = Long.toString(System.nanoTime());
             String cleanUpCompleteMsg = "{" +
                                                 "\"eventId\":\"" + eventId + "\"," +
                                                 "\"time\":\"" + cleanUpTime + "\"" +
@@ -337,8 +337,7 @@ public class FlowRepository implements MqttCallback {
 
                 String updateMsg = udpDataString.substring(0, udpDataString.lastIndexOf(":"));
                 //TODO:: Added for runTime measurement metrics. must be removed later
-                String eventTime = stringElements[stringElements.length - 2] +
-                        "[" + System.nanoTime() + "-" + System.currentTimeMillis() + "]";
+                String eventTime = stringElements[stringElements.length - 2];
                 String responseString = String.format(RESPONSE_MSG_FORMAT_TERMINATE, eventId, eventTime, updateMsg);
                 FlowController.respondToContainerManager(MQTT_PUBLISH_TERMINATE, responseString);
             }
