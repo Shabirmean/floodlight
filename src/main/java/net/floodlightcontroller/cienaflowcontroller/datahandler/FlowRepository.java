@@ -320,10 +320,10 @@ public class FlowRepository implements MqttCallback {
             HashMap<String, Integer> eventIPsAndTableIds = cleanUpEventStructures(eventId, flRemover.getCustomer());
             flRemover.clearOVSFlows(ovsSwitch, eventIPsAndTableIds, ipToOVSPortNumberMap);
             //TODO:: Added for runTime measurement metrics. must be removed later
-            String cleanUpTime = Long.toString(System.nanoTime());
+//            String cleanUpTime = Long.toString(System.nanoTime());
             String cleanUpCompleteMsg = "{" +
-                                                "\"eventId\":\"" + eventId + "\"," +
-                                                "\"time\":\"" + cleanUpTime + "\"" +
+                                                "\"eventId\":\"" + eventId + "\"" +
+//                                                "\"time\":\"" + cleanUpTime + "\"" +
                                         "}";
             FlowController.respondToContainerManager("ciena/cmanager/fm_cm/alldone", cleanUpCompleteMsg);
 
@@ -337,8 +337,9 @@ public class FlowRepository implements MqttCallback {
 
                 String updateMsg = udpDataString.substring(0, udpDataString.lastIndexOf(":"));
                 //TODO:: Added for runTime measurement metrics. must be removed later
-                String eventTime = stringElements[stringElements.length - 2];
-                String responseString = String.format(RESPONSE_MSG_FORMAT_TERMINATE, eventId, eventTime, updateMsg);
+//                String eventTime = stringElements[stringElements.length - 2];
+//                String responseString = String.format(RESPONSE_MSG_FORMAT_TERMINATE, eventId, eventTime, updateMsg);
+                String responseString = String.format(RESPONSE_MSG_FORMAT_TERMINATE, eventId, "", updateMsg);
                 FlowController.respondToContainerManager(MQTT_PUBLISH_TERMINATE, responseString);
             }
             int egressPort = Integer.parseInt(stringElements[EGRESS_PORT_INDEX]);
